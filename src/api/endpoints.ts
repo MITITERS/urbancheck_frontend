@@ -25,7 +25,8 @@ export const endpoints = {
   },
   users: {
     me: `${API}/users/me/`,
-    list: `${API}/users/`,
+    // No hay listado de usuarios: el backend lo sacó (C-01) porque exponía el
+    // correo y el rol de todas las cuentas.
     detail: (id: number) => `${API}/users/${id}/`,
   },
   geo: {
