@@ -35,5 +35,6 @@ RUN npm run build
 FROM nginx:1.27-alpine AS runtime
 ENV API_UPSTREAM=http://django:8000
 COPY compose/nginx/default.conf.template /etc/nginx/templates/default.conf.template
+COPY compose/nginx/security-headers.conf /etc/nginx/snippets/security-headers.conf
 COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 80

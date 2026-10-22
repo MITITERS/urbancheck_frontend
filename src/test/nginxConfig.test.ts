@@ -32,3 +32,65 @@ describe('nginx del panel', () => {
     expect(template).toMatch(/map\s+\$http_x_forwarded_proto\s+\$forwarded_proto/)
   })
 })
+
+/**
+ * Cabeceras de seguridad (C-05). Viven en un fragmento aparte porque nginx no
+ * hereda `add_header`: un `location` que agrega una cabecera propia (la caché de
+ * `/assets/` y de `index.html`) pierde las del `server` si no lo incluye.
+ */
+const headers = readFileSync(
+  resolve(__dirname, '../../compose/nginx/security-headers.conf'),
+  'utf8',
+)
+const dockerfile = readFileSync(resolve(__dirname, '../../Dockerfile'), 'utf8')
+
+function header(name: string): string | undefined {
+  const match = headers.match(
+    new RegExp(`add_header\\s+${name}\\s+"([^"]+)"\\s+always;`),
+  )
+  return match?.[1]
+}
+
+describe('cabeceras de seguridad del panel', () => {
+  it('la imagen copia el fragmento y cada bloque con add_header lo incluye', () => {
+    expect(dockerfile).toMatch(
+      /COPY compose\/nginx\/security-headers\.conf \/etc\/nginx\/snippets\/security-headers\.conf/,
+    )
+    const include = /include \/etc\/nginx\/snippets\/security-headers\.conf;/
+    const server = template.slice(template.indexOf('server {'))
+    expect(server.split('location')[0]).toMatch(include)
+    for (const [path, body] of Object.entries(locations())) {
+      if (body.includes('add_header')) expect(body, path).toMatch(include)
+    }
+  })
+
+  it('declara la política de contenido, por ahora solo para informar', () => {
+    expect(header('Content-Security-Policy')).toBeUndefined()
+    const csp = header('Content-Security-Policy-Report-Only')
+    expect(csp).toBeDefined()
+    expect(csp).not.toMatch(/script-src[^;]*unsafe/)
+    for (const directive of [
+      "default-src 'self'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob: https://*.tile.openstreetmap.org",
+      "connect-src 'self'",
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ]) {
+      expect(csp).toContain(directive)
+    }
+  })
+
+  it('no deja que el navegador adivine tipos ni filtre la URL completa', () => {
+    expect(header('X-Content-Type-Options')).toBe('nosniff')
+    expect(header('Referrer-Policy')).toBe('strict-origin-when-cross-origin')
+  })
+
+  it('apaga la ubicación, la cámara y el micrófono, que el panel no usa', () => {
+    const policy = header('Permissions-Policy')
+    expect(policy).toContain('geolocation=()')
+    expect(policy).toContain('camera=()')
+    expect(policy).toContain('microphone=()')
+  })
+})

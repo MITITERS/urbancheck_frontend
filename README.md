@@ -93,6 +93,14 @@ En producción la imagen es el servicio `panel` de
 Django el `X-Forwarded-Proto` que recibió y no su propio `$scheme`, que sería
 `http`.
 
+Cabeceras de seguridad (C-05): `compose/nginx/security-headers.conf`, que se
+incluye en el `server` y en cada `location` con `add_header` propio (nginx no
+hereda cabeceras entre bloques). Política de contenido, `nosniff`,
+`Referrer-Policy` y `Permissions-Policy` sin ubicación, cámara ni micrófono. El
+HSTS lo agrega Traefik. Los estilos admiten `'unsafe-inline'` porque sonner y
+los gráficos inyectan `<style>`; los scripts no admiten inline ni `eval`, y por
+eso zod corre con `jitless` (`src/lib/zodConfig.ts`).
+
 ## Variables de entorno
 
 Se versiona `.env.example`; `.env` está en `.gitignore` y nunca se commitea.
