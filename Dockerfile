@@ -3,7 +3,7 @@
 # ---------------------------------------------------------------------------
 # deps: install once, reused by the dev and build stages.
 # ---------------------------------------------------------------------------
-FROM node:20-alpine AS deps
+FROM node:22-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -12,7 +12,7 @@ RUN npm ci
 # dev: Vite dev server with hot reload. Used by docker-compose.yml.
 # The source is bind-mounted at runtime, so nothing is copied here.
 # ---------------------------------------------------------------------------
-FROM node:20-alpine AS dev
+FROM node:22-alpine AS dev
 WORKDIR /app
 ENV NODE_ENV=development
 COPY --from=deps /app/node_modules ./node_modules
@@ -22,7 +22,7 @@ CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 # ---------------------------------------------------------------------------
 # build: type-check and produce the static bundle.
 # ---------------------------------------------------------------------------
-FROM node:20-alpine AS build
+FROM node:22-alpine AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .

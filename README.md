@@ -37,6 +37,9 @@ Toda la infraestructura corre on-premise: no se usa ningún servicio cloud
 
 ## Cómo levantar el proyecto
 
+Node 22 LTS: es la versión de `.nvmrc`, de `engines`, del CI y de la imagen de
+Docker (C-17). Con nvm, `nvm use` la toma de `.nvmrc`.
+
 ### Local (sin Docker)
 
 ```bash
