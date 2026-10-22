@@ -1,5 +1,14 @@
 # `${API_UPSTREAM}` is substituted at container start by the nginx image's
 # envsubst entrypoint (see /etc/nginx/templates).
+
+# El esquema que vio el cliente (C-04). En producción el TLS termina en
+# Traefik y a este nginx le llega `http`: reenviar `$scheme` le haría creer a
+# Django que la conexión no es segura, y con SECURE_SSL_REDIRECT redirigiría
+# a https sin fin. Sin proxy adelante (o en local), vale el propio `$scheme`.
+map $http_x_forwarded_proto $forwarded_proto {
+    default $http_x_forwarded_proto;
+    ''      $scheme;
+}
 server {
     listen 80;
     server_name _;
@@ -26,7 +35,7 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto $forwarded_proto;
     }
 
     location /_allauth/ {
@@ -34,7 +43,7 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto $forwarded_proto;
     }
 
     location /media/ {
@@ -50,7 +59,7 @@ server {
         proxy_pass ${API_UPSTREAM};
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto $forwarded_proto;
     }
 
     # Universal Links (iOS) y App Links (Android): con la app instalada, el

@@ -87,6 +87,12 @@ docker build --target runtime -t urbancheck_frontend .
 docker run -p 8080:80 -e API_UPSTREAM=http://django:8000 urbancheck_frontend
 ```
 
+En producción la imagen es el servicio `panel` de
+`urbancheck_backend/docker-compose.production.yml`, detrás de Traefik, en
+`panel.<dominio>` (C-04). Como el TLS termina en Traefik, nginx le reenvía a
+Django el `X-Forwarded-Proto` que recibió y no su propio `$scheme`, que sería
+`http`.
+
 ## Variables de entorno
 
 Se versiona `.env.example`; `.env` está en `.gitignore` y nunca se commitea.
