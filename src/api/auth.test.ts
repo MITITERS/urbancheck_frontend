@@ -9,7 +9,7 @@ import {
 import { apiClient, isApiError } from '@/api/client'
 import { endpoints } from '@/api/endpoints'
 import { messages } from '@/config/messages'
-import { ROLES } from '@/types/auth'
+import { PANEL_ROLES, ROLES } from '@/types/auth'
 
 /**
  * Capa de transporte de la sesión (US-017, US-035).
@@ -39,6 +39,8 @@ describe('normalizeRole', () => {
     ['agente_municipal', ROLES.MUNICIPAL_AGENT],
     ['validador', ROLES.VALIDATOR],
     ['ciudadano', ROLES.CITIZEN],
+    // C-10: el operario no es un ciudadano; antes caía en el default.
+    ['operario', ROLES.OPERATOR],
   ])('traduce %s al rol del panel', (apiValue, expected) => {
     expect(normalizeRole(apiValue)).toBe(expected)
   })
@@ -159,5 +161,17 @@ describe('changePassword', () => {
     })
 
     await expect(changePassword('a', 'b')).rejects.toSatisfy(isApiError)
+  })
+})
+
+describe('el operario en el panel (C-10)', () => {
+  it('no es un rol del panel', () => {
+    expect(PANEL_ROLES).not.toContain(ROLES.OPERATOR)
+  })
+
+  it('la pantalla de permisos lo manda a la app', () => {
+    expect(messages.forbidden.description).toContain(
+      'Si sos ciudadano, validador u operario, usá la aplicación móvil',
+    )
   })
 })

@@ -802,7 +802,7 @@ export const messages = {
   forbidden: {
     title: 'Permisos insuficientes',
     description:
-      'Esta aplicación es de uso exclusivo del personal municipal. Si sos ciudadano o validador, usá la aplicación móvil de UrbanCheck.',
+      'Esta aplicación es de uso exclusivo del personal municipal. Si sos ciudadano, validador u operario, usá la aplicación móvil de UrbanCheck.',
     // Para quien sí opera el panel pero entró a una sección de otro rol.
     sectionTitle: 'Esta sección no es de tu rol',
     sectionDescription:

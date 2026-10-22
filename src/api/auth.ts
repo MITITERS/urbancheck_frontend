@@ -32,6 +32,9 @@ const ROLE_BY_API_VALUE: Record<string, Role> = {
   admin_plataforma: ROLES.PLATFORM_ADMIN,
   agente_municipal: ROLES.MUNICIPAL_AGENT,
   validador: ROLES.VALIDATOR,
+  // C-10: sin esta entrada el operario caía en el default y el panel lo
+  // trataba como ciudadano.
+  operario: ROLES.OPERATOR,
   ciudadano: ROLES.CITIZEN,
 }
 

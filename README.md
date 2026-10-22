@@ -1,14 +1,14 @@
 # UrbanCheck — Panel municipal
 
 Panel web de gestión de reportes urbanos, de uso exclusivo del personal de las
-municipalidades desde equipos de escritorio. Los ciudadanos y los validadores no
-acceden a esta aplicación: usan la app móvil.
+municipalidades desde equipos de escritorio. Los ciudadanos, los validadores y
+los operarios no acceden a esta aplicación: usan la app móvil.
 
-| Repositorio                    | Tecnología                                 | Rol                         |
-| ------------------------------ | ------------------------------------------ | --------------------------- |
-| `MITITERS/urbancheck_backend`  | Django REST Framework + PostgreSQL/PostGIS | API                         |
-| `MITITERS/urbancheck_frontend` | Vite + React + TypeScript                  | Panel municipal (este repo) |
-| `MITITERS/urbancheck_mobile`   | Expo + React Native + TypeScript           | App ciudadano y validador   |
+| Repositorio                    | Tecnología                                 | Rol                                 |
+| ------------------------------ | ------------------------------------------ | ----------------------------------- |
+| `MITITERS/urbancheck_backend`  | Django REST Framework + PostgreSQL/PostGIS | API                                 |
+| `MITITERS/urbancheck_frontend` | Vite + React + TypeScript                  | Panel municipal (este repo)         |
+| `MITITERS/urbancheck_mobile`   | Expo + React Native + TypeScript           | App ciudadano, validador y operario |
 
 **Regla transversal:** todo usuario municipal opera exclusivamente sobre los
 datos de su propia municipalidad. La API filtra por jurisdicción del lado del
@@ -297,9 +297,11 @@ municipalidad— pero sí abre el detalle, que es a donde lleva esa tabla. Gana 
 primera coincidencia, así que la entrada exacta va antes que la de prefijo.
 
 La traducción de los valores que manda la API (`admin_plataforma`,
-`agente_municipal`, `validador`, `ciudadano`) a las constantes del panel vive en
-un único lugar: `ROLE_BY_API_VALUE` en `src/api/auth.ts`. Un valor desconocido
-degrada a `CITIZEN`, que es el rol con menos privilegios.
+`agente_municipal`, `validador`, `operario`, `ciudadano`) a las constantes del
+panel vive en un único lugar: `ROLE_BY_API_VALUE` en `src/api/auth.ts`. Un valor
+desconocido degrada a `CITIZEN`, que es el rol con menos privilegios. El
+operario tenía que estar en la tabla y no estaba: caía en ese default y el
+panel lo trataba como ciudadano (C-10).
 
 ### Validadores: una pantalla, dos alcances
 
