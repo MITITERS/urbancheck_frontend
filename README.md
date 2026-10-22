@@ -100,6 +100,9 @@ hereda cabeceras entre bloques). Política de contenido, `nosniff`,
 HSTS lo agrega Traefik. Los estilos admiten `'unsafe-inline'` porque sonner y
 los gráficos inyectan `<style>`; los scripts no admiten inline ni `eval`, y por
 eso zod corre con `jitless` (`src/lib/zodConfig.ts`).
+La política se aplica (no solo informa) desde el 22/10/2026, después de
+recorrer con Playwright las pantallas del agente y del admin, el login y la
+página pública sin ninguna violación.
 
 ## Variables de entorno
 

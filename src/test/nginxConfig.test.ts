@@ -64,9 +64,9 @@ describe('cabeceras de seguridad del panel', () => {
     }
   })
 
-  it('declara la política de contenido, por ahora solo para informar', () => {
-    expect(header('Content-Security-Policy')).toBeUndefined()
-    const csp = header('Content-Security-Policy-Report-Only')
+  it('aplica la política de contenido, ya validada en las pantallas', () => {
+    expect(header('Content-Security-Policy-Report-Only')).toBeUndefined()
+    const csp = header('Content-Security-Policy')
     expect(csp).toBeDefined()
     expect(csp).not.toMatch(/script-src[^;]*unsafe/)
     for (const directive of [
