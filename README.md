@@ -1054,3 +1054,8 @@ El panel solo admite `ADMIN_PLATAFORMA` y `AGENTE_MUNICIPAL`, y cada uno ve lo
 suyo: las municipalidades y los agentes son del administrador de la plataforma;
 los reportes y los validadores, del agente municipal. Cualquier otro rol con
 sesión válida recibe la pantalla de permisos insuficientes.
+
+## Licencia
+
+Propietaria, todos los derechos reservados: ver [`LICENSE`](LICENSE). Es la
+misma en los tres repositorios de UrbanCheck (C-14).
