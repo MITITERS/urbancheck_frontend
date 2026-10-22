@@ -487,7 +487,7 @@ export const messages = {
     activate: 'Reactivar',
     deactivateTitle: '¿Desactivar a este validador?',
     deactivateDescription:
-      'Pierde la posibilidad de validar reportes, pero conserva su acceso a la aplicación como ciudadano común. Las validaciones que ya ejecutó se mantienen en el historial.',
+      'Pierde la posibilidad de validar reportes. La cuenta es de trabajo: dada de baja, no puede usarla como vecino. Las validaciones que ya ejecutó se mantienen en el historial.',
     deactivateConfirm: 'Desactivar validador',
     deactivated: 'El validador ya no puede validar. Lo movimos a Archivados.',
     activated: 'El validador vuelve a estar habilitado.',
@@ -614,7 +614,7 @@ export const messages = {
   moderation: {
     title: 'Denuncias',
     description:
-      'Reportes de tu municipio que los vecinos denunciaron. Las de contenido se resuelven una sola vez por reporte, con todas sus denuncias; las de dato personal, por imagen y dentro de las 24 horas.',
+      'Reportes de tu municipio que los vecinos denunciaron. Las de contenido se resuelven una sola vez por reporte, con todas sus denuncias; las de dato personal, por imagen y dentro del plazo que muestra cada una.',
     adminDescription:
       'Denuncias de la municipalidad elegida. Las de dato personal las resolvés vos; las de contenido, su agente municipal.',
     filterLabel: 'Tipo de denuncia',
@@ -636,7 +636,10 @@ export const messages = {
       decision: 'Decisión',
       resolvedAt: 'Resuelta',
     },
-    /** Las de contenido no tienen plazo; las de dato personal, 24 horas. */
+    /**
+     * Las de contenido no tienen plazo; las de dato personal, el que configura
+     * el backend (`PERSONAL_DATA_REVIEW_MINUTES`) y llega en cada fila.
+     */
     noDeadline: 'Sin plazo',
     reportPhoto: 'Foto del reporte',
     resolvedBy: 'Resolvió',
