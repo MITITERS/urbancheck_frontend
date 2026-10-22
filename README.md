@@ -280,24 +280,31 @@ componentes no interpretan payloads crudos. `isApiError()` es el type guard.
 ### Roles
 
 El panel solo admite `ADMIN_PLATAFORMA` y `AGENTE_MUNICIPAL`. Cualquier otro rol
-con sesión válida ve la pantalla de permisos insuficientes, no una redirección
-silenciosa: rebotarlo al login parecería una contraseña mal puesta.
+con sesión válida —ciudadano, validador u operario— ve la pantalla de permisos
+insuficientes, no una redirección silenciosa: rebotarlo al login parecería una
+contraseña mal puesta.
 
-Los dos roles llegan a todo lo que les corresponde; lo que cambia es el alcance
-de los datos, y ese recorte lo hace el backend, no la navegación. `ROUTE_ACCESS`
+Los dos roles llegan a casi todo; lo que cambia es el alcance de los datos, y ese
+recorte lo hace el backend, no la navegación. El agente ve su municipio; el
+admin, la municipalidad que eligió en el selector del header
+(`features/municipality-scope/`). `ROUTE_ACCESS` (`src/routes/routeAccess.ts`)
 es la única tabla de acceso, y hoy dice:
 
-| Ruta                           | Quién   |
-| ------------------------------ | ------- |
-| `/reportes` (listado)          | agente  |
-| `/reportes/:id` (detalle)      | los dos |
-| `/validadores`                 | los dos |
-| `/municipalidades`, `/agentes` | admin   |
+| Ruta                                      | Quién   |
+| ----------------------------------------- | ------- |
+| `/reportes` y `/reportes/:id`             | los dos |
+| `/estadisticas`                           | los dos |
+| `/denuncias` (`/privacidad` redirige acá) | los dos |
+| `/apelaciones`                            | los dos |
+| `/validadores`                            | los dos |
+| `/areas` y `/areas/:id`                   | los dos |
+| `/municipalidades`, `/agentes`            | admin   |
 
-La única entrada `exact` de la tabla es el listado de reportes, justamente para
-separarlo del detalle: el admin no tiene un listado global —mira los reportes por
-municipalidad— pero sí abre el detalle, que es a donde lleva esa tabla. Gana la
-primera coincidencia, así que la entrada exacta va antes que la de prefijo.
+Fuera de la tabla quedan las rutas sin sesión: `/login`, `/sin-permisos` y
+`/reporte/:token`, la página pública de un reporte compartido (US-030). Dentro
+de una pantalla compartida, algunas acciones siguen siendo de un rol: en
+Denuncias, descartar y desestimar por contenido son del agente; en Apelaciones,
+el agente resuelve las de su municipio y el admin, todas.
 
 La traducción de los valores que manda la API (`admin_plataforma`,
 `agente_municipal`, `validador`, `operario`, `ciudadano`) a las constantes del
@@ -1055,13 +1062,6 @@ Documentada en `src/lib/queryKeys.ts`. Las keys van de lo general a lo
 específico — `['reportes', 'list', filtros]`, `['reportes', 'detail', id]` — para
 que invalidar por prefijo alcance a todas las listas filtradas de una. Ningún
 componente arma una key inline.
-
-### Roles
-
-El panel solo admite `ADMIN_PLATAFORMA` y `AGENTE_MUNICIPAL`, y cada uno ve lo
-suyo: las municipalidades y los agentes son del administrador de la plataforma;
-los reportes y los validadores, del agente municipal. Cualquier otro rol con
-sesión válida recibe la pantalla de permisos insuficientes.
 
 ## Licencia
 
