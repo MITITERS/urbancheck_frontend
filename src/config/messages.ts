@@ -331,6 +331,8 @@ export const messages = {
     history: 'Historial de cambios',
     historyEmpty: 'Sin movimientos registrados.',
     initialStatus: 'Alta del reporte',
+    // El admin ejecuta las acciones del panel con las reglas del agente (C-15).
+    actedAsPlatformAdmin: 'como administración de la plataforma',
     reason: 'Motivo',
     actions: 'Acciones',
     awaitingValidation:

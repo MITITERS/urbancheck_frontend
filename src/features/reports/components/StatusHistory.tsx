@@ -78,6 +78,14 @@ export function StatusHistory({ entries }: { entries: StatusHistoryEntry[] }) {
                   una decisión del panel (US-038).
                 */}
                 {entry.changed_by ? ` · ${entry.changed_by.name}` : ''}
+                {/*
+                  El admin ejecuta las acciones con las reglas del agente: sin
+                  esta marca, el asiento no deja ver que no fue el municipio
+                  (C-15).
+                */}
+                {entry.changed_by_role === 'admin_plataforma'
+                  ? ` (${messages.reportDetail.actedAsPlatformAdmin})`
+                  : ''}
                 {originLabel(entry) ? ` · ${originLabel(entry)}` : ''}
                 {entry.confirmation_count !== null
                   ? ` · ${messages.reportDetail.collectiveConfirmations(

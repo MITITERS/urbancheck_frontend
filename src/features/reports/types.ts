@@ -334,6 +334,13 @@ export interface StatusHistoryEntry {
   previous_status: ReportStatus | ''
   status: ReportStatus
   changed_by: ReportAuthor | null
+  /**
+   * Con qué rol actuó `changed_by`, como era en ese momento (C-15). El admin de
+   * la plataforma ejecuta las acciones con las reglas del agente: esto es lo
+   * que deja verlo. Vacío en los asientos viejos y en los automáticos; ausente
+   * en un backend anterior al campo.
+   */
+  changed_by_role?: string
   reason: string
   /**
    * De dónde salió la transición. Es lo que distingue una validación en terreno

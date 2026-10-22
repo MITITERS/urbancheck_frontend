@@ -786,6 +786,11 @@ sin responsable individual —la validación colectiva, la confirmación automá
 el archivado por inactividad— no tenía forma de explicarse; ahora dice qué la
 produjo, y la colectiva agrega con cuántas confirmaciones.
 
+Desde C-15 también trae `changed_by_role`, el rol con que actuó quien hizo el
+cambio. El admin de la plataforma ejecuta las acciones con las reglas del
+agente, así que sus cambios llevan «como administración de la plataforma» al
+lado del nombre.
+
 ### Los dos cierres y la objeción, en un solo hilo (US-046 y US-048)
 
 `ResolutionThread` muestra **todos** los partes de trabajo y no el último: cuando
