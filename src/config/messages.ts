@@ -34,6 +34,9 @@ export const messages = {
     empty: 'Todavía no hay nada para mostrar.',
     yes: 'Sí',
     no: 'No',
+    // El vecino borró su cuenta (N-09): sus reportes gestionados se conservan
+    // sin autor.
+    deletedUser: 'Usuario eliminado',
   },
   municipalities: {
     title: 'Municipalidades',

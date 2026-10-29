@@ -236,7 +236,8 @@ export interface PanelReportRow {
   has_official_response: boolean
   /** Jurisdicción del reporte. La necesita el admin para distinguir filas. */
   municipality: Municipality | null
-  author: ReportAuthor
+  /** Nulo si el vecino borró su cuenta (N-09). */
+  author: ReportAuthor | null
   /**
    * Solo llega al pedir el listado con `validated_by`: es la única consulta en
    * la que hay un validador del que hablar. El estado del reporte no lo
@@ -409,7 +410,8 @@ export interface PanelReportDetail {
   longitude: string | null
   created_at: string
   updated_at: string
-  author: ReportAuthor
+  /** Nulo si el vecino borró su cuenta (N-09). */
+  author: ReportAuthor | null
   like_count: number
   comments: ReportComment[]
   status_history: StatusHistoryEntry[]

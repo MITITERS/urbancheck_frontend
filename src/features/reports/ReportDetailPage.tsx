@@ -110,7 +110,11 @@ export function ReportDetailPage() {
                       </MetaItem>
                       <MetaItem icon={<User className="size-3.5" />}>
                         {messages.reportDetail.author}:{' '}
-                        <AuthorLink id={report.author.id} name={report.author.name} />
+                        {report.author ? (
+                          <AuthorLink id={report.author.id} name={report.author.name} />
+                        ) : (
+                          messages.common.deletedUser
+                        )}
                       </MetaItem>
                       <MetaItem icon={<ThumbsUp className="size-3.5" />}>
                         {messages.reportDetail.likes}: {report.like_count}

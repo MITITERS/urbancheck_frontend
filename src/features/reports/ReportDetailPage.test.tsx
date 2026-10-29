@@ -151,6 +151,15 @@ describe('ReportDetailPage — a dónde vuelve cada rol', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('N-09 · un reporte cuyo vecino borró la cuenta dice "Usuario eliminado"', async () => {
+    mockedRole.current = ROLES.MUNICIPAL_AGENT
+    vi.spyOn(apiClient, 'get').mockResolvedValue({ data: { ...DETAIL, author: null } })
+
+    renderWithProviders(<ReportDetailPage />)
+
+    expect(await screen.findByText(/Usuario eliminado/)).toBeInTheDocument()
+  })
+
   it('nombra el reporte por su número de municipio', async () => {
     mockedRole.current = ROLES.MUNICIPAL_AGENT
 

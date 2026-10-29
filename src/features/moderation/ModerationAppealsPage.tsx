@@ -67,7 +67,10 @@ function Voice({
           {person ? (
             <AuthorLink id={person.id} name={person.name} />
           ) : (
-            <span className="text-muted-foreground">—</span>
+            <span className="text-muted-foreground">
+              {/* Sin autor solo queda el vecino que borró su cuenta (N-09). */}
+              {tone === 'author' ? messages.common.deletedUser : '—'}
+            </span>
           )}
           <span className="text-xs text-muted-foreground">
             {' '}

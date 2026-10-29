@@ -60,6 +60,17 @@ describe('ModerationAppealsPage', () => {
     expect(screen.getByText(/Villa María/)).toBeInTheDocument()
   })
 
+  it('N-09 · la apelación de un vecino que borró la cuenta dice "Usuario eliminado"', async () => {
+    vi.spyOn(apiClient, 'get').mockResolvedValue({
+      data: { count: 1, results: [{ ...APPEAL, author: null }] },
+    } as never)
+
+    renderWithProviders(<ModerationAppealsPage />)
+
+    expect(await screen.findByText(APPEAL.reason)).toBeInTheDocument()
+    expect(screen.getByText(messages.common.deletedUser)).toBeInTheDocument()
+  })
+
   it('CP-049-P14 · muestra la foto del reporte apelado', async () => {
     renderWithProviders(<ModerationAppealsPage />)
 

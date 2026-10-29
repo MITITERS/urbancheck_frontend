@@ -21,7 +21,8 @@ export interface ModerationInboxEntry {
   /** Nula si no tiene, o si está retenida por una denuncia de dato personal. */
   photo: string | null
   created_at: string
-  author: ReportAuthor
+  /** Nulo si el vecino borró su cuenta (N-09). */
+  author: ReportAuthor | null
   pending_complaint_count: number
   oldest_complaint_at: string
   complaints: ContentComplaint[]
@@ -40,7 +41,8 @@ export interface ModerationAppeal {
   resolved_at: string | null
   resolved_by: ReportAuthor | null
   resolution_reason: string
-  author: ReportAuthor
+  /** Nulo si el vecino borró su cuenta (N-09). */
+  author: ReportAuthor | null
   report: {
     id: number
     number: number | null
