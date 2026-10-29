@@ -10,7 +10,8 @@ map $http_x_forwarded_proto $forwarded_proto {
     ''      $scheme;
 }
 server {
-    listen 80;
+    # 8080 y no 80 (N-18): corre sin root, que no abre puertos bajos.
+    listen 8080;
     server_name _;
     root /usr/share/nginx/html;
     index index.html;

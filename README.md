@@ -87,7 +87,7 @@ Imagen de producción (build con Node, servida por nginx):
 
 ```bash
 docker build --target runtime -t urbancheck_frontend .
-docker run -p 8080:80 -e API_UPSTREAM=http://django:8000 urbancheck_frontend
+docker run -p 8080:8080 -e API_UPSTREAM=http://django:8000 urbancheck_frontend
 ```
 
 En producción la imagen es el servicio `panel` de

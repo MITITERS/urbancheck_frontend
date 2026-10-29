@@ -30,11 +30,12 @@ RUN npm run build
 
 # ---------------------------------------------------------------------------
 # runtime: the bundle served by nginx, which also proxies the API so the
-# browser only ever talks to one origin.
+# browser only ever talks to one origin. Sin root (N-18): la imagen
+# nginx-unprivileged corre como el usuario nginx y escucha en 8080.
 # ---------------------------------------------------------------------------
-FROM nginx:1.27-alpine AS runtime
+FROM nginxinc/nginx-unprivileged:1.31.7-alpine AS runtime
 ENV API_UPSTREAM=http://django:8000
 COPY compose/nginx/default.conf.template /etc/nginx/templates/default.conf.template
 COPY compose/nginx/security-headers.conf /etc/nginx/snippets/security-headers.conf
 COPY --from=build /app/dist /usr/share/nginx/html
-EXPOSE 80
+EXPOSE 8080
