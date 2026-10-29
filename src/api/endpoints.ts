@@ -22,6 +22,7 @@ export const endpoints = {
     changePassword: `${ALLAUTH}/account/password/change`,
     requestPasswordReset: `${ALLAUTH}/auth/password/request`,
     resetPassword: `${ALLAUTH}/auth/password/reset`,
+    verifyEmail: `${ALLAUTH}/auth/email/verify`,
   },
   users: {
     me: `${API}/users/me/`,

@@ -5,6 +5,8 @@ import { CHANGE_PASSWORD_ROUTE, LOGIN_ROUTE } from '@/config/constants'
 import { AgentsPage } from '@/features/platform-admin/AgentsPage'
 import { MunicipalitiesPage } from '@/features/platform-admin/MunicipalitiesPage'
 import { PublicReportPage } from '@/features/public-report/PublicReportPage'
+import { ConfirmEmailPage } from '@/features/account-links/ConfirmEmailPage'
+import { ResetPasswordPage } from '@/features/account-links/ResetPasswordPage'
 import { ModerationAppealsPage } from '@/features/moderation/ModerationAppealsPage'
 import { ModerationInboxPage } from '@/features/moderation/ModerationInboxPage'
 import { AreaDetailPage } from '@/features/areas/AreaDetailPage'
@@ -43,6 +45,11 @@ export function AppRoutes() {
           enlace que se comparte es `/r/<token>`: lo responde el backend, con la
           vista previa para las redes, y redirige acá. */}
       <Route path="/reporte/:token" element={<PublicReportPage />} />
+      {/* Los enlaces de los correos (N-16), también sin sesión: allauth ya no
+          tiene páginas HTML. A la de recuperación llega `/reset-password` del
+          backend cuando la app no está instalada. */}
+      <Route path="/restablecer-contrasena" element={<ResetPasswordPage />} />
+      <Route path="/confirmar-correo" element={<ConfirmEmailPage />} />
 
       {/* Authenticated but outside the shell: nothing else is reachable until
           the temporary password is replaced. */}

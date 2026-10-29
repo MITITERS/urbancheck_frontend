@@ -794,6 +794,24 @@ export const messages = {
     confirmPassword: 'Repetir contraseña nueva',
     submit: 'Guardar contraseña',
   },
+  // Las dos páginas públicas a las que llegan los enlaces de los correos (N-16).
+  accountLinks: {
+    resetTitle: 'Elegí una contraseña nueva',
+    resetDescription: 'Vas a usarla para ingresar a UrbanCheck.',
+    newPassword: 'Contraseña nueva',
+    confirmPassword: 'Repetir contraseña nueva',
+    minLength: (min: number) => `Usá al menos ${min} caracteres.`,
+    mismatch: 'Las contraseñas no coinciden.',
+    resetSubmit: 'Guardar contraseña',
+    resetDone: 'Tu contraseña fue cambiada. Ya podés ingresar con la nueva.',
+    confirmTitle: 'Confirmación de correo',
+    confirming: 'Confirmando tu correo…',
+    confirmDone: 'Listo: tu correo quedó confirmado.',
+    invalidLink:
+      'El enlace no es válido o ya venció. Pedí uno nuevo desde la aplicación.',
+    continueHint: 'Ya podés volver a la aplicación de UrbanCheck.',
+    goToLogin: 'Ir al ingreso',
+  },
   errors: {
     unexpected: 'Ocurrió un error inesperado. Intentá de nuevo.',
     network: 'No pudimos comunicarnos con el servidor.',
