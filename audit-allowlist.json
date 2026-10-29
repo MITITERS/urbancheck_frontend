@@ -1,8 +1,1 @@
-[
-  {
-    "advisory": "GHSA-vfj7-8cjw-p6xm",
-    "package": "braces",
-    "reason": "Sin versión corregida publicada (3.0.3 es la última y está afectada). Solo la usa la CLI de shadcn a través de fast-glob y micromatch, en tiempo de desarrollo y con patrones que escribe el equipo; no llega al bundle del navegador.",
-    "reviewed": "2026-10-15"
-  }
-]
+[]
