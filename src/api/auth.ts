@@ -1,6 +1,7 @@
 import { apiClient, createApiError } from '@/api/client'
 import { endpoints } from '@/api/endpoints'
 import { messages } from '@/config/messages'
+import { storeToken } from '@/lib/session'
 import { ROLES, type AuthUser, type Role } from '@/types/auth'
 
 /**
@@ -88,8 +89,12 @@ export async function changePassword(
   currentPassword: string,
   newPassword: string,
 ): Promise<void> {
-  await apiClient.post(endpoints.auth.changePassword, {
-    current_password: currentPassword,
-    new_password: newPassword,
-  })
+  const { data } = await apiClient.post<AllauthSessionResponse>(
+    endpoints.auth.changePassword,
+    { current_password: currentPassword, new_password: newPassword },
+  )
+  // allauth rota el token de esta sesión y cierra las demás (N-04): sin
+  // guardar el nuevo, el pedido siguiente iba con uno que ya no vale.
+  const rotated = data?.meta?.session_token
+  if (rotated) storeToken(rotated)
 }
