@@ -815,6 +815,19 @@ export const messages = {
     continueHint: 'Ya podés volver a la aplicación de UrbanCheck.',
     goToLogin: 'Ir al ingreso',
   },
+  // Cuando una pantalla falla al dibujarse o no llega por la red (N-19).
+  errorBoundary: {
+    title: 'Esta pantalla no se pudo mostrar',
+    description:
+      'Ocurrió un error inesperado. Lo que ya estaba guardado no se perdió: probá de nuevo.',
+    offlineTitle: 'Sin conexión',
+    offlineDescription:
+      'No pudimos cargar esta pantalla porque no hay conexión. Revisá la red y probá de nuevo.',
+    retry: 'Reintentar',
+  },
+  offline: {
+    banner: 'Sin conexión. Lo que hagas no se va a guardar hasta que vuelva la red.',
+  },
   errors: {
     unexpected: 'Ocurrió un error inesperado. Intentá de nuevo.',
     network: 'No pudimos comunicarnos con el servidor.',

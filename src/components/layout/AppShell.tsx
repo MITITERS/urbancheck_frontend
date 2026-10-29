@@ -1,4 +1,5 @@
 import { Outlet, useNavigate } from 'react-router-dom'
+import { RouteErrorBoundary } from '@/components/common/ErrorBoundary'
 import { LOGIN_ROUTE } from '@/config/constants'
 import { useAuth } from '@/hooks/useAuth'
 import { MunicipalityScopeProvider } from '@/features/municipality-scope/MunicipalityScopeProvider'
@@ -31,7 +32,10 @@ export function AppShell() {
         */}
           <main className="flex-1 px-4 py-6 md:px-6 lg:px-8">
             <div className="mx-auto w-full max-w-[100rem]">
-              <Outlet />
+              {/* Una pantalla que falla no se lleva el menú (N-19). */}
+              <RouteErrorBoundary>
+                <Outlet />
+              </RouteErrorBoundary>
             </div>
           </main>
         </div>
