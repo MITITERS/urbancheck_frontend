@@ -13,7 +13,6 @@ const t = messages.publicReport
 const TOKEN = 'da139cad-eb68-4d1a-bd2f-9ae4b21c7601'
 
 const REPORT: PublicReport = {
-  id: 42,
   number: 136,
   category: 'vereda',
   category_label: 'Vereda',
@@ -105,6 +104,17 @@ describe('PublicReportPage', () => {
 
     expect(await screen.findByText('La foto es de otra ciudad')).toBeInTheDocument()
     expect(screen.getByText(t.discardedBody)).toBeInTheDocument()
+  })
+
+  it('N-06 · sin número no muestra el id ni un numeral suelto', async () => {
+    // La respuesta pública ya no trae el id, que es correlativo.
+    respond(200, { ...REPORT, number: null })
+    renderPage()
+
+    expect(
+      await screen.findByText('Baldosas levantadas por raíces'),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/^#/)).toBeNull()
   })
 
   it('CP-030-P05 (US-030 E2) · se abre sin sesión: no pasa por el login', async () => {

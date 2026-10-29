@@ -65,9 +65,11 @@ function Report({ report }: { report: PublicReport }) {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h1 className="flex items-center gap-2 font-heading text-xl font-semibold">
               <ReportCategoryLabel category={report.category} />
-              <span className="text-muted-foreground tabular-nums">
-                #{report.number ?? report.id}
-              </span>
+              {report.number !== null && (
+                <span className="text-muted-foreground tabular-nums">
+                  #{report.number}
+                </span>
+              )}
             </h1>
             <ReportStatusBadge status={report.status} />
           </div>

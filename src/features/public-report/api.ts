@@ -6,9 +6,11 @@ import type { ReportCategory, ReportStatus } from '@/features/reports/types'
 
 export const publicReportKeys = domainKeys('reporte-publico')
 
-/** El reporte tal como lo ve cualquiera que abre el enlace (US-030). */
+/**
+ * El reporte tal como lo ve cualquiera que abre el enlace (US-030). Sin `id`,
+ * que es correlativo, y con las coordenadas redondeadas a unos 100 m (N-06).
+ */
 export interface PublicReport {
-  id: number
   number: number | null
   category: ReportCategory
   category_label: string
