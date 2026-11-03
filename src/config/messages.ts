@@ -146,6 +146,8 @@ export const messages = {
       createdFrom: 'Desde',
       createdTo: 'Hasta',
       ordering: 'Ordenar por',
+      toggle: 'Filtros',
+      active: 'Activos',
       clear: 'Limpiar filtros',
       clearDate: 'Quitar la fecha',
       allStatuses: 'Todos los estados',
@@ -562,9 +564,6 @@ export const messages = {
     stagesNote:
       'La validación depende de los validadores y de los vecinos; la asignación y la resolución, del municipio. Los reportes abiertos no entran en los promedios.',
     validation: 'Validación',
-    external: 'Fuera del municipio',
-    validationSplit: (field: string, collective: string) =>
-      `En terreno ${field} · Por la comunidad ${collective}`,
     assignment: 'Asignación',
     resolution: 'Resolución',
     sample: (count: number) => (count === 1 ? '1 caso' : `${count} casos`),
@@ -588,6 +587,38 @@ export const messages = {
     groupOpen: 'En curso',
     groupResolved: 'Resueltos',
     groupOut: 'Fuera del circuito',
+    export: 'Exportar PDF',
+    exporting: 'Generando PDF…',
+    exportError: 'No pudimos generar el PDF. Probá de nuevo.',
+    /** El PDF descargable: una hoja A4 con todo lo de la sección. */
+    pdf: {
+      documentTitle: (municipality: string | null) =>
+        municipality ? `Estadísticas · ${municipality}` : 'Estadísticas',
+      periodLabel: 'Período',
+      generated: (when: string) => `Generado el ${when}`,
+      created: 'Reportes creados',
+      inPeriod: 'en el período',
+      average: (sample: string) => `promedio · ${sample}`,
+      resolvedShare: 'de los reportes creados en el período ya está resuelto.',
+      topCategory: (share: string) =>
+        `es la categoría más reportada (${share} del total).`,
+      slowestStage: (time: string) => `es la etapa que más tarda: ${time} en promedio.`,
+      footer: 'UrbanCheck · Panel municipal',
+    },
+    /** La ayuda corta de cada tarjeta, detrás del ícono de información. */
+    help: {
+      label: (card: string) => `Qué significa «${card}»`,
+      stages:
+        'Cuánto tarda en promedio cada paso: validar el reporte, asignarlo a un área y resolverlo. Solo cuenta los reportes que terminaron ese paso en el período.',
+      open: 'Reportes que hoy siguen esperando, sin importar el período. Debajo, cuánto lleva esperando el más antiguo.',
+      appealed:
+        'De los cierres hechos en el período, cuántos objetó después el vecino. Si supera el umbral, se marca en rojo.',
+      exits:
+        'Reportes que salieron del circuito sin resolverse en el período: rechazados, descartados, cancelados o archivados por falta de actividad.',
+      byCategory:
+        'Cómo se reparten por tipo de problema los reportes creados en el período.',
+      byStatus: 'En qué estado están hoy los reportes creados en el período.',
+    },
   },
   municipalityScope: {
     label: 'Municipalidad que estás viendo',

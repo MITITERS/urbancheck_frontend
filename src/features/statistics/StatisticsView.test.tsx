@@ -4,11 +4,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { apiClient } from '@/api/client'
 import { endpoints } from '@/api/endpoints'
 import { messages } from '@/config/messages'
-import { formatDuration, formatHours } from '@/lib/format'
+import { formatDuration, formatHours, toDateOnly } from '@/lib/format'
 import { renderWithProviders } from '@/test/renderWithProviders'
 import { rangeError } from './hooks/useStatisticsPeriod'
 import { StatisticsView } from './StatisticsView'
+import { exportStatisticsPdf } from './pdf/exportStatisticsPdf'
 import type { Indicators, Statistics } from './types'
+
+vi.mock('./pdf/exportStatisticsPdf', () => ({ exportStatisticsPdf: vi.fn() }))
 
 const t = messages.statistics
 type RequestConfig = Parameters<typeof apiClient.get>[1]
@@ -176,6 +179,63 @@ describe('StatisticsView', () => {
 
     await waitFor(() => expect(paramsOf(get).params).toEqual({ period: '12m' }))
   })
+
+  it('CP-023-P06 (US-023 E6) · el calendario del rango no ofrece días futuros', async () => {
+    const user = userEvent.setup()
+    const today = toDateOnly(new Date())
+    renderWithProviders(<StatisticsView title="Estadísticas" />, {
+      route: `/estadisticas?period=custom&start=${today}&end=${today}`,
+    })
+
+    await waitFor(() =>
+      expect(document.getElementById('statistics-end')).not.toBeNull(),
+    )
+    await user.click(document.getElementById('statistics-end')!)
+    const days = document.querySelectorAll<HTMLElement>('td[data-day]')
+    expect(days.length).toBeGreaterThan(0)
+    for (const day of days) {
+      const future = day.dataset.day! > today
+      expect(day.hasAttribute('data-disabled'), day.dataset.day).toBe(future)
+    }
+  })
+
+  it('el botón exporta a PDF el período que se está viendo', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(
+      <StatisticsView title="Estadísticas" municipalityName="Villa María (Córdoba)" />,
+      { route: '/estadisticas' },
+    )
+
+    const button = await screen.findByRole('button', { name: t.export })
+    await waitFor(() => expect(button).toBeEnabled())
+    await user.click(button)
+
+    expect(exportStatisticsPdf).toHaveBeenCalledWith(
+      statistics(),
+      'Villa María (Córdoba)',
+    )
+  })
+
+  it('cada tarjeta tiene una ayuda corta que se abre al tocar el ícono', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<StatisticsView title="Estadísticas" />, {
+      route: '/estadisticas',
+    })
+
+    const cards = [
+      [t.stages, t.help.stages],
+      [t.open, t.help.open],
+      [t.appealed, t.help.appealed],
+      [t.exits, t.help.exits],
+      [t.byCategory, t.help.byCategory],
+      [t.byStatus, t.help.byStatus],
+    ]
+    for (const [card, text] of cards) {
+      await user.click(await screen.findByRole('button', { name: t.help.label(card) }))
+      expect(await screen.findByText(text)).toBeInTheDocument()
+      await user.keyboard('{Escape}')
+    }
+  })
 })
 
 describe('indicadores de gestión (US-050)', () => {
@@ -193,10 +253,6 @@ describe('indicadores de gestión (US-050)', () => {
     const validation = screen.getByRole('group', { name: t.validation })
     expect(within(validation).getByText('50 hs')).toBeInTheDocument()
     expect(within(validation).getByText(t.sample(3))).toBeInTheDocument()
-    // E2: discriminada por origen.
-    expect(
-      within(validation).getByText(t.validationSplit('6 hs', '72 hs')),
-    ).toBeInTheDocument()
     const assignment = screen.getByRole('group', { name: t.assignment })
     expect(within(assignment).getByText('8 hs')).toBeInTheDocument()
   })

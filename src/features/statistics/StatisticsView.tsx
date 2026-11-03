@@ -1,16 +1,20 @@
-import type { ReactNode } from 'react'
-import { CalendarRange } from 'lucide-react'
+import { useState, type ReactNode } from 'react'
+import { CalendarRange, FileDown, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 import { PageHeader } from '@/components/common/PageHeader'
 import { QueryState } from '@/components/common/QueryState'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { messages } from '@/config/messages'
 import { formatDateOnly } from '@/lib/format'
 import { useStatistics } from './api/statistics'
 import { CategoryDonut } from './components/CategoryDonut'
+import { TitleWithHint } from './components/InfoHint'
 import { IndicatorCards } from './components/IndicatorCards'
 import { PeriodSelector } from './components/PeriodSelector'
 import { StatusBreakdown } from './components/StatusBreakdown'
 import { useStatisticsPeriod } from './hooks/useStatisticsPeriod'
+import { exportStatisticsPdf } from './pdf/exportStatisticsPdf'
 
 const t = messages.statistics
 
@@ -28,14 +32,30 @@ export function StatisticsView({
   title,
   description,
   municipalityId,
+  municipalityName = null,
 }: {
   title: string
   description?: ReactNode
   municipalityId?: number
+  /** Para el encabezado y el nombre del PDF. */
+  municipalityName?: string | null
 }) {
   const { selection, apply } = useStatisticsPeriod()
   const statistics = useStatistics(selection, municipalityId)
   const data = statistics.data
+  const [exporting, setExporting] = useState(false)
+
+  const exportPdf = async () => {
+    if (!data) return
+    setExporting(true)
+    try {
+      await exportStatisticsPdf(data, municipalityName)
+    } catch {
+      toast.error(t.exportError)
+    } finally {
+      setExporting(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -60,12 +80,28 @@ export function StatisticsView({
           </>
         }
         actions={
-          // La clave reinicia el formulario si la URL cambia por fuera.
-          <PeriodSelector
-            key={`${selection.period}-${selection.start ?? ''}-${selection.end ?? ''}`}
-            selection={selection}
-            onApply={apply}
-          />
+          <>
+            {/* La clave reinicia el formulario si la URL cambia por fuera. */}
+            <PeriodSelector
+              key={`${selection.period}-${selection.start ?? ''}-${selection.end ?? ''}`}
+              selection={selection}
+              onApply={apply}
+            />
+            {/* Exporta el período aplicado, el mismo que se está viendo. */}
+            <Button
+              variant="outline"
+              className="self-start"
+              disabled={!data || exporting}
+              onClick={() => void exportPdf()}
+            >
+              {exporting ? (
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+              ) : (
+                <FileDown className="size-4" aria-hidden />
+              )}
+              {exporting ? t.exporting : t.export}
+            </Button>
+          </>
         }
       />
 
@@ -94,7 +130,7 @@ export function StatisticsView({
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {t.byCategory}
+                  <TitleWithHint title={t.byCategory} hint={t.help.byCategory} />
                 </CardTitle>
               </CardHeader>
               {/* Comparte fila con «Por estado», que es más alta: el contenido
@@ -107,7 +143,7 @@ export function StatisticsView({
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {t.byStatus}
+                  <TitleWithHint title={t.byStatus} hint={t.help.byStatus} />
                 </CardTitle>
               </CardHeader>
               <CardContent>

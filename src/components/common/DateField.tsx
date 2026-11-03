@@ -15,6 +15,8 @@ interface DateFieldProps {
   /** La fecha en el formato de la API: `aaaa-mm-dd`, o vacío. */
   value: string
   onChange: (value: string) => void
+  /** La última fecha elegible, en `aaaa-mm-dd`. Las posteriores se ven deshabilitadas. */
+  max?: string
   className?: string
 }
 
@@ -31,8 +33,9 @@ interface DateFieldProps {
  * El valor que entra y sale sigue siendo el de la API (`aaaa-mm-dd`): lo único
  * que cambia es cómo se muestra y cómo se elige.
  */
-export function DateField({ id, value, onChange, className }: DateFieldProps) {
+export function DateField({ id, value, onChange, max, className }: DateFieldProps) {
   const selected = parseDateOnly(value)
+  const last = max ? parseDateOnly(max) : undefined
 
   return (
     <Popover>
@@ -78,6 +81,8 @@ export function DateField({ id, value, onChange, className }: DateFieldProps) {
           autoFocus
           selected={selected}
           defaultMonth={selected}
+          disabled={last && { after: last }}
+          endMonth={last}
           onSelect={(date) => onChange(date ? toDateOnly(date) : '')}
         />
       </PopoverContent>

@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { messages } from '@/config/messages'
+import { toDateOnly } from '@/lib/format'
 import { PERIOD_KEYS, type PeriodKey, type PeriodSelection } from '../types'
 
 const t = messages.statistics
@@ -34,6 +35,8 @@ export function PeriodSelector({
   const [start, setStart] = useState(selection.start ?? '')
   const [end, setEnd] = useState(selection.end ?? '')
   const [error, setError] = useState<string | null>(null)
+  // El rango no puede incluir días futuros: el calendario ni los ofrece.
+  const today = toDateOnly(new Date())
 
   const choose = (value: string) => {
     const period = value as PeriodKey
@@ -51,6 +54,7 @@ export function PeriodSelector({
               id="statistics-start"
               value={start}
               onChange={setStart}
+              max={today}
               className="w-40"
             />
             <span className="text-sm text-muted-foreground">–</span>
@@ -58,6 +62,7 @@ export function PeriodSelector({
               id="statistics-end"
               value={end}
               onChange={setEnd}
+              max={today}
               className="w-40"
             />
             <Button

@@ -1,33 +1,20 @@
 import type { ReactNode } from 'react'
-import { ChevronRight, TriangleAlert } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
+import { TriangleAlert } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { messages } from '@/config/messages'
 import { formatDuration, formatHours } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { AverageTime, Indicators } from '../types'
 import { STATUS_COLOR } from './colors'
+import { TitleWithHint } from './InfoHint'
 
 const t = messages.statistics
 
 /** Una etapa del circuito: el promedio grande y la muestra al lado. */
-function Stage({
-  title,
-  value,
-  badge,
-  footer,
-}: {
-  title: string
-  value: AverageTime
-  badge?: ReactNode
-  footer?: ReactNode
-}) {
+function Stage({ title, value }: { title: string; value: AverageTime }) {
   return (
     <div role="group" aria-label={title} className="min-w-0 space-y-1.5">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm font-medium text-muted-foreground">{title}</span>
-        {badge}
-      </div>
+      <span className="block text-sm font-medium text-muted-foreground">{title}</span>
       {value.avg_seconds === null ? (
         <p className="py-1.5 text-sm text-muted-foreground">{t.noCases}</p>
       ) : (
@@ -40,27 +27,19 @@ function Stage({
           </span>
         </p>
       )}
-      {footer}
     </div>
-  )
-}
-
-function Arrow() {
-  return (
-    <ChevronRight
-      aria-hidden
-      className="hidden size-5 self-center text-muted-foreground/40 md:block"
-    />
   )
 }
 
 /** Una tarjeta de seguimiento, todas de la misma altura. */
 function FollowUp({
   title,
+  hint,
   children,
   className,
 }: {
   title: string
+  hint: string
   children: ReactNode
   className?: string
 }) {
@@ -68,7 +47,7 @@ function FollowUp({
     <Card role="group" aria-label={title} className={cn('h-full', className)}>
       <CardHeader>
         <CardTitle className="text-sm font-medium text-muted-foreground">
-          {title}
+          <TitleWithHint title={title} hint={hint} />
         </CardTitle>
       </CardHeader>
       <CardContent className="flex-1">{children}</CardContent>
@@ -107,46 +86,24 @@ function Row({
  * Los indicadores de gestión (US-050), encima de los gráficos de US-023.
  *
  * Arriba, los tres tiempos en una sola tarjeta y en el orden del circuito,
- * unidos por flechas, para que se lea de un vistazo dónde está el cuello de
- * botella. La validación lleva la marca de que no depende del municipio y su
- * desglose por origen. Abajo, lo que los promedios esconden: lo abierto, los
+ * para que se lea de un vistazo dónde está el cuello de botella. Abajo, lo que los promedios esconden: lo abierto, los
  * cierres apelados contra su umbral y las salidas del circuito.
  */
 export function IndicatorCards({ indicators }: { indicators: Indicators }) {
   const { validation, appealed_closures: appealed, cancellations } = indicators
-  const split = (value: AverageTime) =>
-    value.avg_seconds === null ? '—' : formatHours(value.avg_seconds)
 
   return (
     <section className="space-y-4" aria-label={t.stages}>
       <Card>
         <CardHeader>
           <CardTitle className="text-sm font-medium text-muted-foreground">
-            {t.stages}
+            <TitleWithHint title={t.stages} hint={t.help.stages} />
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-6 md:grid-cols-[1fr_auto_1fr_auto_1fr] md:gap-4">
-            <Stage
-              title={t.validation}
-              value={validation.overall}
-              badge={
-                <Badge variant="outline" className="font-normal text-muted-foreground">
-                  {t.external}
-                </Badge>
-              }
-              footer={
-                <p className="text-xs text-muted-foreground">
-                  {t.validationSplit(
-                    split(validation.field),
-                    split(validation.collective),
-                  )}
-                </p>
-              }
-            />
-            <Arrow />
+          <div className="grid gap-6 md:grid-cols-3">
+            <Stage title={t.validation} value={validation.overall} />
             <Stage title={t.assignment} value={indicators.assignment} />
-            <Arrow />
             <Stage title={t.resolution} value={indicators.resolution} />
           </div>
           <p className="border-t pt-3 text-xs text-muted-foreground">{t.stagesNote}</p>
@@ -154,7 +111,7 @@ export function IndicatorCards({ indicators }: { indicators: Indicators }) {
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <FollowUp title={t.open}>
+        <FollowUp title={t.open} hint={t.help.open}>
           <div className="divide-y">
             {indicators.open.map((row) => (
               <Row
@@ -176,7 +133,7 @@ export function IndicatorCards({ indicators }: { indicators: Indicators }) {
           </div>
         </FollowUp>
 
-        <FollowUp title={t.appealed}>
+        <FollowUp title={t.appealed} hint={t.help.appealed}>
           {appealed.percentage === null ? (
             <p className="text-sm text-muted-foreground">{t.noCases}</p>
           ) : (
@@ -223,7 +180,7 @@ export function IndicatorCards({ indicators }: { indicators: Indicators }) {
           )}
         </FollowUp>
 
-        <FollowUp title={t.exits}>
+        <FollowUp title={t.exits} hint={t.help.exits}>
           <div className="divide-y">
             <Row
               dot={STATUS_COLOR.cancelado}

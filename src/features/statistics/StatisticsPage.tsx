@@ -8,13 +8,14 @@ import { StatisticsView } from './StatisticsView'
  * por el servidor; el admin, las de la municipalidad elegida en el header.
  */
 export function StatisticsPage() {
-  const { municipalityId } = useMunicipalityScope()
+  const { municipalityId, current } = useMunicipalityScope()
   return (
     <RequireMunicipality>
       <StatisticsView
         title={messages.statistics.title}
         description={messages.statistics.description}
         municipalityId={municipalityId}
+        municipalityName={current ? `${current.city} (${current.province})` : null}
       />
     </RequireMunicipality>
   )
