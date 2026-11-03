@@ -17,26 +17,52 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { messages } from '@/config/messages'
-import { formatDateTime } from '@/lib/format'
+import { formatDate, formatTime, streetAddress } from '@/lib/format'
 import type { PanelReportRow } from '../types'
 import { ReportCategoryLabel } from './ReportCategory'
 import { ReportStatusBadge } from './ReportStatusBadge'
 
 const columns = messages.reports.columns
 
+/**
+ * Escenario 13 de US-024: lo que se busca de un vistazo son los reclamos **sin**
+ * comunicación institucional, así que ese es el estado que se marca y el otro
+ * queda discreto.
+ */
+function OfficialResponseState({ answered }: { answered: boolean }) {
+  return answered ? (
+    <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+      <MessageSquareDot className="size-3.5" aria-hidden />
+      {messages.reports.answered}
+    </span>
+  ) : (
+    <Badge variant="secondary">{messages.reports.unanswered}</Badge>
+  )
+}
+
 export function ReportsTable({ reports }: { reports: PanelReportRow[] }) {
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-20">{columns.id}</TableHead>
+          <TableHead className="w-12">{columns.id}</TableHead>
           <TableHead>{columns.category}</TableHead>
           <TableHead>{columns.status}</TableHead>
           <TableHead>{columns.createdAt}</TableHead>
           <TableHead>{columns.address}</TableHead>
-          <TableHead className="w-20 text-right">{columns.likes}</TableHead>
-          <TableHead>{columns.operativeArea}</TableHead>
-          <TableHead className="w-40">{columns.officialResponse}</TableHead>
+          {/* Por debajo de xl, likes, área y respuesta no tienen columna
+              propia: el área baja debajo de la categoría, la respuesta se suma
+              a los badges del estado y los likes quedan para el detalle. Así la
+              tabla entra sin scroll horizontal también en pantallas medianas. */}
+          <TableHead className="hidden w-20 text-right xl:table-cell">
+            {columns.likes}
+          </TableHead>
+          <TableHead className="hidden xl:table-cell">
+            {columns.operativeArea}
+          </TableHead>
+          <TableHead className="hidden xl:table-cell">
+            {columns.officialResponse}
+          </TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -55,8 +81,14 @@ export function ReportsTable({ reports }: { reports: PanelReportRow[] }) {
             </TableCell>
             <TableCell className="font-medium">
               <ReportCategoryLabel category={report.category} />
+              {report.operative_area && (
+                <span className="mt-0.5 block text-xs font-normal text-muted-foreground xl:hidden">
+                  {report.operative_area.name}
+                </span>
+              )}
             </TableCell>
-            <TableCell>
+            {/* Los badges extra bajan a otra línea en vez de ensanchar la tabla. */}
+            <TableCell className="whitespace-normal">
               <span className="flex flex-wrap items-center gap-1.5">
                 <ReportStatusBadge status={report.status} />
                 {/* US-015, escenario 3: el cierre que la comparación automática
@@ -102,43 +134,41 @@ export function ReportsTable({ reports }: { reports: PanelReportRow[] }) {
                     {messages.reports.notPublished}
                   </Badge>
                 )}
+                <span className="xl:hidden">
+                  <OfficialResponseState answered={report.has_official_response} />
+                </span>
               </span>
             </TableCell>
+            {/* Fecha y hora en dos líneas: en una sola, era la columna que más
+                empujaba el ancho. */}
             <TableCell className="text-muted-foreground">
-              {formatDateTime(report.created_at)}
+              <span className="block">{formatDate(report.created_at)}</span>
+              <span className="block text-xs">{formatTime(report.created_at)}</span>
             </TableCell>
-            <TableCell className="max-w-xs">
+            {/* Solo calle y número; la dirección completa queda en el título y
+                en el detalle. */}
+            <TableCell className="max-w-48">
               <span className="flex items-center gap-1.5">
                 <MapPin
                   className="size-3.5 shrink-0 text-muted-foreground"
                   aria-hidden
                 />
                 <span className="truncate" title={report.address || undefined}>
-                  {report.address || '—'}
+                  {streetAddress(report.address) || '—'}
                 </span>
               </span>
             </TableCell>
-            <TableCell className="text-right">
+            <TableCell className="hidden text-right xl:table-cell">
               <span className="inline-flex items-center gap-1.5 text-muted-foreground">
                 <ThumbsUp className="size-3.5" aria-hidden />
                 {report.like_count}
               </span>
             </TableCell>
-            <TableCell className="text-muted-foreground">
+            <TableCell className="hidden whitespace-normal text-muted-foreground xl:table-cell">
               {report.operative_area?.name ?? '—'}
             </TableCell>
-            <TableCell>
-              {/* Escenario 13 de US-024: lo que se busca de un vistazo son los
-                  reclamos **sin** comunicación institucional, así que ese es el
-                  estado que se marca y el otro queda discreto. */}
-              {report.has_official_response ? (
-                <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
-                  <MessageSquareDot className="size-3.5" aria-hidden />
-                  {messages.reports.answered}
-                </span>
-              ) : (
-                <Badge variant="secondary">{messages.reports.unanswered}</Badge>
-              )}
+            <TableCell className="hidden xl:table-cell">
+              <OfficialResponseState answered={report.has_official_response} />
             </TableCell>
           </TableRow>
         ))}

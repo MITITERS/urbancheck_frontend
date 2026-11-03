@@ -16,10 +16,22 @@ const dateTimeFormatter = new Intl.DateTimeFormat(LOCALE, {
   minute: '2-digit',
 })
 
+const timeFormatter = new Intl.DateTimeFormat(LOCALE, {
+  hour: '2-digit',
+  minute: '2-digit',
+})
+
 export function formatDate(value: string | null | undefined): string {
   if (!value) return '—'
   const date = new Date(value)
   return Number.isNaN(date.getTime()) ? '—' : dateFormatter.format(date)
+}
+
+/** Solo la hora, «09:53 a. m.», para mostrarla debajo de la fecha. */
+export function formatTime(value: string | null | undefined): string {
+  if (!value) return ''
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? '' : timeFormatter.format(date)
 }
 
 export function formatDateTime(value: string | null | undefined): string {
@@ -53,6 +65,31 @@ export function shortAddress(value: string | null | undefined): string {
     .filter(Boolean)
   if (parts.length <= ADDRESS_PARTS) return parts.join(', ')
   return parts.slice(0, ADDRESS_PARTS).join(', ')
+}
+
+/** Un número de puerta: «527», «1145b», «12-14». */
+const HOUSE_NUMBER = /^\d+[a-z]?(-\d+)?$/i
+
+/**
+ * Solo calle y número —«Corrientes 527»—, para las filas de una tabla.
+ *
+ * El geocodificador arma la dirección al revés de como se lee —«527,
+ * Corrientes, Centro, Villa María, …»— y a veces con un lugar adelante
+ * —«Banco Patagonia, 1145, Santa Fe, …»—. Si hay un tramo que es un número de
+ * puerta, se lo pone detrás de la calle que lo sigue. Si no lo hay, queda el
+ * primer tramo, que es la calle o lo que haya escrito la persona.
+ */
+export function streetAddress(value: string | null | undefined): string {
+  if (!value) return ''
+  const parts = value
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean)
+  const number = parts.findIndex((part) => HOUSE_NUMBER.test(part))
+  if (number !== -1 && number + 1 < parts.length) {
+    return `${parts[number + 1]} ${parts[number]}`
+  }
+  return parts[0] ?? ''
 }
 
 /**
