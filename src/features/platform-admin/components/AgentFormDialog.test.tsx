@@ -37,10 +37,11 @@ function municipality(id: number, city: string): MunicipalityDetail {
   }
 }
 
-const MUNICIPALITIES = [municipality(3, 'Villa María'), municipality(5, 'Villa Nueva')]
+const VILLA_MARIA = municipality(3, 'Villa María')
 
-async function openDialog(municipalities = MUNICIPALITIES) {
-  renderWithProviders(<AgentFormDialog municipalities={municipalities} />)
+/** La municipalidad viene fija: la que el admin eligió en el header. */
+async function openDialog(chosen = VILLA_MARIA) {
+  renderWithProviders(<AgentFormDialog municipality={chosen} />)
   const user = userEvent.setup()
   await user.click(screen.getByRole('button', { name: labels.create }))
   await screen.findByText(labels.createTitle)
@@ -48,40 +49,24 @@ async function openDialog(municipalities = MUNICIPALITIES) {
 }
 
 /** Completa el formulario por el camino feliz. */
-async function fillForm(
-  user: ReturnType<typeof userEvent.setup>,
-  { city = 'Villa María — Córdoba' } = {},
-) {
+async function fillForm(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText(labels.name), 'Ana Agente')
   await user.type(screen.getByLabelText(labels.email), 'ana@villamaria.gob.ar')
   await user.type(screen.getByLabelText(labels.temporaryPassword), 'temporal123')
-  await user.click(screen.getByRole('combobox', { name: labels.municipality }))
-  await user.click(await screen.findByRole('option', { name: city }))
 }
 
 describe('AgentFormDialog', () => {
-  it('sin municipalidades registradas no se puede abrir', () => {
-    // Un agente sin jurisdicción no existe: primero se registra el municipio.
-    renderWithProviders(<AgentFormDialog municipalities={[]} />)
-
-    expect(screen.getByRole('button', { name: labels.create })).toBeDisabled()
-  })
-
   it('explica que la contraseña temporal se usa una sola vez', async () => {
     await openDialog()
 
     expect(screen.getByText(labels.temporaryPasswordHint)).toBeInTheDocument()
   })
 
-  it('lista las municipalidades disponibles con su provincia', async () => {
-    const user = await openDialog()
+  it('la municipalidad es la del header, fija: no se elige en el formulario', async () => {
+    await openDialog()
 
-    await user.click(screen.getByRole('combobox', { name: labels.municipality }))
-
-    expect(await screen.findAllByRole('option')).toHaveLength(2)
-    expect(
-      screen.getByRole('option', { name: 'Villa Nueva — Córdoba' }),
-    ).toBeInTheDocument()
+    expect(screen.getByText('Villa María, Córdoba')).toBeInTheDocument()
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
   })
 
   it('crea el agente con el cuerpo que espera la API', async () => {
@@ -98,7 +83,7 @@ describe('AgentFormDialog', () => {
         name: 'Ana Agente',
         email: 'ana@villamaria.gob.ar',
         temporary_password: 'temporal123',
-        // El id viaja como número aunque el `select` lo maneje como texto.
+        // La del header.
         municipality_id: 3,
       }),
     )
@@ -117,7 +102,7 @@ describe('AgentFormDialog', () => {
     )
   })
 
-  it('exige el nombre, el correo, la contraseña y la municipalidad', async () => {
+  it('exige el nombre, el correo y la contraseña', async () => {
     const post = vi.spyOn(apiClient, 'post')
     const user = await openDialog()
 
@@ -126,7 +111,6 @@ describe('AgentFormDialog', () => {
     expect(await screen.findByText('Ingresá el nombre del agente.')).toBeInTheDocument()
     expect(screen.getByText('El correo no es válido.')).toBeInTheDocument()
     expect(screen.getByText('Usá al menos 8 caracteres.')).toBeInTheDocument()
-    expect(screen.getByText('Elegí una municipalidad.')).toBeInTheDocument()
     expect(post).not.toHaveBeenCalled()
   })
 
@@ -137,10 +121,6 @@ describe('AgentFormDialog', () => {
     await user.type(screen.getByLabelText(labels.name), 'Ana')
     await user.type(screen.getByLabelText(labels.email), 'ana@villamaria.gob.ar')
     await user.type(screen.getByLabelText(labels.temporaryPassword), 'corta')
-    await user.click(screen.getByRole('combobox', { name: labels.municipality }))
-    await user.click(
-      await screen.findByRole('option', { name: 'Villa María — Córdoba' }),
-    )
     await user.click(screen.getByRole('button', { name: messages.common.save }))
 
     expect(await screen.findByText('Usá al menos 8 caracteres.')).toBeInTheDocument()

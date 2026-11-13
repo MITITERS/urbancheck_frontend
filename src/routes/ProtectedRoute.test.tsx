@@ -102,13 +102,17 @@ describe('ProtectedRoute', () => {
     expect(await screen.findByText(messages.forbidden.sectionTitle)).toBeInTheDocument()
   })
 
-  it('denies the platform admin the agent-only report list', async () => {
-    // Los mira por municipalidad. Se llega acá por el historial del navegador.
+  it('lets the platform admin open the report list of the chosen municipality', async () => {
+    // Desde que la municipalidad se elige en el header, el admin ve los
+    // reportes como el agente de esa ciudad.
     signedInAs(buildUser(ROLES.PLATFORM_ADMIN, { municipality: null }))
 
     renderWithProviders(<AppRoutes />, { route: '/reportes' })
 
-    expect(await screen.findByText(messages.forbidden.sectionTitle)).toBeInTheDocument()
+    expect(
+      await screen.findByRole('link', { name: messages.nav.reports }),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(messages.forbidden.sectionTitle)).not.toBeInTheDocument()
   })
 
   it('lets the platform admin open a report detail', async () => {
@@ -128,14 +132,14 @@ describe('ProtectedRoute', () => {
 describe('pantalla de permisos insuficientes', () => {
   it('al personal del panel le ofrece volver a su sección, no cerrar sesión', async () => {
     // Ofrecerle solo cerrar sesión lo dejaba en un callejón sin salida.
-    signedInAs(buildUser(ROLES.PLATFORM_ADMIN, { municipality: null }))
+    signedInAs(buildUser(ROLES.MUNICIPAL_AGENT))
 
-    renderWithProviders(<AppRoutes />, { route: '/reportes' })
+    renderWithProviders(<AppRoutes />, { route: '/municipalidades' })
     await screen.findByText(messages.forbidden.sectionTitle)
 
     expect(
       screen.getByRole('link', { name: messages.forbidden.goHome }),
-    ).toHaveAttribute('href', '/municipalidades')
+    ).toHaveAttribute('href', '/reportes')
     expect(
       screen.queryByRole('button', { name: messages.forbidden.logout }),
     ).not.toBeInTheDocument()

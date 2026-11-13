@@ -1,10 +1,22 @@
 import { NavLink } from 'react-router-dom'
-import { Building2, FileText, Hammer, ScanFace, ShieldCheck, Users } from 'lucide-react'
+import {
+  Building2,
+  ChartBar,
+  FileText,
+  Flag,
+  Gavel,
+  Hammer,
+  ShieldCheck,
+  Users,
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { BrandMark, BrandWordmark } from '@/components/common/Brand'
 import { messages } from '@/config/messages'
+import { useModerationCount } from '@/features/moderation/api/moderation'
+import { useMunicipalityScope } from '@/features/municipality-scope/context'
+import { usePrivacyRequests } from '@/features/privacy/api/privacyRequests'
 import { canAccessPath } from '@/routes/routeAccess'
-import type { Role } from '@/types/auth'
+import { ROLES, type Role } from '@/types/auth'
 
 interface NavItem {
   to: string
@@ -25,19 +37,40 @@ const NAV_ITEMS: readonly NavItem[] = [
   { to: '/municipalidades', label: messages.nav.municipalities, icon: Building2 },
   { to: '/agentes', label: messages.nav.agents, icon: ShieldCheck },
   { to: '/reportes', label: messages.nav.reports, icon: FileText },
+  // Junto a reportes: es la otra mitad de la pantalla de trabajo del agente,
+  // el mismo universo visto en conjunto (US-023).
+  { to: '/estadisticas', label: messages.nav.statistics, icon: ChartBar },
   { to: '/validadores', label: messages.nav.validators, icon: Users },
   // Al final y después de validadores: es la sección de gestión interna del
   // municipio, la que menos se abre en el día a día del agente.
   { to: '/areas', label: messages.nav.areas, icon: Hammer },
-  // Solo del admin (US-043). Al final: no es alta de nada, es una bandeja que
-  // se atiende cuando entra algo.
-  { to: '/privacidad', label: messages.nav.privacy, icon: ScanFace },
+  // La moderación de contenido (US-049): la bandeja es solo del agente; las
+  // apelaciones las ven los dos, cada uno con su alcance.
+  { to: '/denuncias', label: messages.nav.moderation, icon: Flag },
+  { to: '/apelaciones', label: messages.nav.moderationAppeals, icon: Gavel },
 ]
 
 export function Sidebar({ role }: { role: Role }) {
   // Se filtra con la misma tabla que guarda las rutas: así el sidebar no puede
   // ofrecer un destino que después rebota con «permisos insuficientes».
   const items = NAV_ITEMS.filter((item) => canAccessPath(role, item.to))
+  // El contador de pendientes de la bandeja (US-049): solo el agente lo pide,
+  // porque es el único que la atiende.
+  const { municipalityId, current } = useMunicipalityScope()
+  const moderation = useModerationCount({
+    enabled: role === ROLES.MUNICIPAL_AGENT || current !== null,
+    municipalityId,
+  })
+  // Denuncias junta las de contenido y las de dato personal (21/10).
+  const privacy = usePrivacyRequests('pending', municipalityId, {
+    enabled: role === ROLES.MUNICIPAL_AGENT || current !== null,
+  })
+  const badges: Partial<Record<string, number>> = {
+    '/denuncias':
+      moderation.data === undefined && privacy.data === undefined
+        ? undefined
+        : (moderation.data ?? 0) + (privacy.data?.length ?? 0),
+  }
 
   return (
     <aside className="sticky top-0 hidden h-svh w-64 shrink-0 flex-col border-r bg-sidebar md:flex">
@@ -84,6 +117,14 @@ export function Sidebar({ role }: { role: Role }) {
                   aria-hidden
                 />
                 {label}
+                {!!badges[to] && (
+                  <span
+                    className="ml-auto rounded-full bg-destructive px-1.5 py-0.5 text-[0.6875rem] leading-none font-semibold text-white tabular-nums"
+                    aria-label={messages.nav.pendingCount(badges[to] ?? 0)}
+                  >
+                    {badges[to]}
+                  </span>
+                )}
               </>
             )}
           </NavLink>

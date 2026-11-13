@@ -93,10 +93,6 @@ describe('tabla de acceso', () => {
     expect(
       screen.queryByRole('link', { name: messages.nav.agents }),
     ).not.toBeInTheDocument()
-    // La protección de datos es de la plataforma, no del municipio (US-043).
-    expect(
-      screen.queryByRole('link', { name: messages.nav.privacy }),
-    ).not.toBeInTheDocument()
   })
 
   it('la raíz manda a cada rol a su primera pantalla', async () => {
@@ -117,21 +113,25 @@ describe('tabla de acceso', () => {
     expect(labels).toEqual([
       messages.nav.municipalities,
       messages.nav.agents,
+      // Desde que la municipalidad se elige en el header, el admin ve lo mismo
+      // que el agente de esa ciudad.
+      messages.nav.reports,
+      messages.nav.statistics,
       messages.nav.validators,
       messages.nav.areas,
-      messages.nav.privacy,
+      // Protección de datos se unió a Denuncias (21/10).
+      messages.nav.moderation,
+      messages.nav.moderationAppeals,
     ])
   })
 
-  it('el administrador no tiene el módulo de reportes', async () => {
-    // Los mira por municipalidad, desde la ficha de cada una: un listado global
-    // suelto sería una segunda puerta a lo mismo.
+  it('el administrador ve los reportes de la municipalidad elegida', async () => {
+    // Decisión del usuario (21/10): con el selector del header, el admin tiene
+    // los mismos módulos que el agente, acotados a la ciudad elegida.
     await loginAs(ROLES.PLATFORM_ADMIN, '/')
     await screen.findByRole('link', { name: messages.nav.municipalities })
 
-    expect(
-      screen.queryByRole('link', { name: messages.nav.reports }),
-    ).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: messages.nav.reports })).toBeInTheDocument()
   })
 
   it('el agente ve su pantalla de trabajo primero', async () => {
@@ -142,15 +142,33 @@ describe('tabla de acceso', () => {
 
     expect(labels).toEqual([
       messages.nav.reports,
+      messages.nav.statistics,
       messages.nav.validators,
       messages.nav.areas,
+      // Las bandejas, al final: no son alta de nada.
+      messages.nav.moderation,
+      messages.nav.moderationAppeals,
     ])
   })
 })
 
+describe('moderación de contenido (US-049)', () => {
+  it('CP-049-P01 (US-049 E11) · denuncias y apelaciones son de los dos roles del panel', () => {
+    expect(canAccessPath(ROLES.MUNICIPAL_AGENT, '/denuncias')).toBe(true)
+    // El admin la ve; resolver sigue siendo del agente (lo controla el backend).
+    expect(canAccessPath(ROLES.PLATFORM_ADMIN, '/denuncias')).toBe(true)
+    expect(canAccessPath(ROLES.VALIDATOR, '/denuncias')).toBe(false)
+    expect(canAccessPath(ROLES.PLATFORM_ADMIN, '/apelaciones')).toBe(true)
+    expect(canAccessPath(ROLES.MUNICIPAL_AGENT, '/apelaciones')).toBe(true)
+    expect(canAccessPath(ROLES.VALIDATOR, '/apelaciones')).toBe(false)
+  })
+})
+
 describe('protección de datos (US-043)', () => {
-  it('el agente no puede abrir la bandeja ni escribiendo la ruta', () => {
-    expect(canAccessPath(ROLES.MUNICIPAL_AGENT, '/privacidad')).toBe(false)
+  it('el enlace viejo sigue abierto a los dos roles: redirige a Denuncias', () => {
+    // Desde el 21/10 las solicitudes viven en Denuncias, filtradas por tipo.
+    expect(canAccessPath(ROLES.MUNICIPAL_AGENT, '/privacidad')).toBe(true)
     expect(canAccessPath(ROLES.PLATFORM_ADMIN, '/privacidad')).toBe(true)
+    expect(canAccessPath(ROLES.VALIDATOR, '/privacidad')).toBe(false)
   })
 })

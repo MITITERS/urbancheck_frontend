@@ -54,6 +54,11 @@ export default defineConfig(({ mode }) => {
         '/_allauth': { target: proxyTarget },
         // Las fotos de los reportes: las sirve Django en desarrollo.
         '/media': { target: proxyTarget },
+        // El enlace para compartir un reporte (US-030): lo responde Django con
+        // la vista previa para las redes y redirige a `/reporte/<token>`. Con
+        // `^` es una expresión regular: `'/r'` a secas, como prefijo, también
+        // se llevaría `/reportes`.
+        '^/r/': { target: proxyTarget },
       },
     },
   }

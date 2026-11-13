@@ -1,14 +1,14 @@
 # UrbanCheck — Panel municipal
 
 Panel web de gestión de reportes urbanos, de uso exclusivo del personal de las
-municipalidades desde equipos de escritorio. Los ciudadanos y los validadores no
-acceden a esta aplicación: usan la app móvil.
+municipalidades desde equipos de escritorio. Los ciudadanos, los validadores y
+los operarios no acceden a esta aplicación: usan la app móvil.
 
-| Repositorio                    | Tecnología                                 | Rol                         |
-| ------------------------------ | ------------------------------------------ | --------------------------- |
-| `MITITERS/urbancheck_backend`  | Django REST Framework + PostgreSQL/PostGIS | API                         |
-| `MITITERS/urbancheck_frontend` | Vite + React + TypeScript                  | Panel municipal (este repo) |
-| `MITITERS/urbancheck_mobile`   | Expo + React Native + TypeScript           | App ciudadano y validador   |
+| Repositorio                    | Tecnología                                 | Rol                                 |
+| ------------------------------ | ------------------------------------------ | ----------------------------------- |
+| `MITITERS/urbancheck_backend`  | Django REST Framework + PostgreSQL/PostGIS | API                                 |
+| `MITITERS/urbancheck_frontend` | Vite + React + TypeScript                  | Panel municipal (este repo)         |
+| `MITITERS/urbancheck_mobile`   | Expo + React Native + TypeScript           | App ciudadano, validador y operario |
 
 **Regla transversal:** todo usuario municipal opera exclusivamente sobre los
 datos de su propia municipalidad. La API filtra por jurisdicción del lado del
@@ -36,6 +36,9 @@ Toda la infraestructura corre on-premise: no se usa ningún servicio cloud
 (AWS, GCP, Azure, Vercel, Netlify) ni SDKs que requieran cuenta en la nube.
 
 ## Cómo levantar el proyecto
+
+Node 22 LTS: es la versión de `.nvmrc`, de `engines`, del CI y de la imagen de
+Docker (C-17). Con nvm, `nvm use` la toma de `.nvmrc`.
 
 ### Local (sin Docker)
 
@@ -67,12 +70,42 @@ El contenedor de desarrollo monta el código fuente y proxea `/api` y
 de backend tiene otro nombre, la red cambia: mirá `docker network ls` y
 exportá `BACKEND_NETWORK=<nombre>`.
 
+**Cuando cambian las dependencias** (`package.json`), hay que reconstruir la
+imagen y recrear el volumen de `node_modules`:
+
+```bash
+docker compose up -d --build -V frontend
+```
+
+El código se monta desde tu máquina, pero `node_modules` vive en la imagen, en
+un volumen anónimo. Un `npm install` en la Mac no llega al contenedor, y sin
+`-V` el volumen viejo tapa la instalación nueva. El síntoma es
+`Failed to resolve import "<paquete>"` en el navegador. Pasó con `recharts` al
+sumar las estadísticas (US-023).
+
 Imagen de producción (build con Node, servida por nginx):
 
 ```bash
 docker build --target runtime -t urbancheck_frontend .
-docker run -p 8080:80 -e API_UPSTREAM=http://django:8000 urbancheck_frontend
+docker run -p 8080:8080 -e API_UPSTREAM=http://django:8000 urbancheck_frontend
 ```
+
+En producción la imagen es el servicio `panel` de
+`urbancheck_backend/docker-compose.production.yml`, detrás de Traefik, en
+`panel.<dominio>` (C-04). Como el TLS termina en Traefik, nginx le reenvía a
+Django el `X-Forwarded-Proto` que recibió y no su propio `$scheme`, que sería
+`http`.
+
+Cabeceras de seguridad (C-05): `compose/nginx/security-headers.conf`, que se
+incluye en el `server` y en cada `location` con `add_header` propio (nginx no
+hereda cabeceras entre bloques). Política de contenido, `nosniff`,
+`Referrer-Policy` y `Permissions-Policy` sin ubicación, cámara ni micrófono. El
+HSTS lo agrega Traefik. Los estilos admiten `'unsafe-inline'` porque sonner y
+los gráficos inyectan `<style>`; los scripts no admiten inline ni `eval`, y por
+eso zod corre con `jitless` (`src/lib/zodConfig.ts`).
+La política se aplica (no solo informa) desde el 22/10/2026, después de
+recorrer con Playwright las pantallas del agente y del admin, el login y la
+página pública sin ninguna violación.
 
 ## Variables de entorno
 
@@ -247,29 +280,38 @@ componentes no interpretan payloads crudos. `isApiError()` es el type guard.
 ### Roles
 
 El panel solo admite `ADMIN_PLATAFORMA` y `AGENTE_MUNICIPAL`. Cualquier otro rol
-con sesión válida ve la pantalla de permisos insuficientes, no una redirección
-silenciosa: rebotarlo al login parecería una contraseña mal puesta.
+con sesión válida —ciudadano, validador u operario— ve la pantalla de permisos
+insuficientes, no una redirección silenciosa: rebotarlo al login parecería una
+contraseña mal puesta.
 
-Los dos roles llegan a todo lo que les corresponde; lo que cambia es el alcance
-de los datos, y ese recorte lo hace el backend, no la navegación. `ROUTE_ACCESS`
+Los dos roles llegan a casi todo; lo que cambia es el alcance de los datos, y ese
+recorte lo hace el backend, no la navegación. El agente ve su municipio; el
+admin, la municipalidad que eligió en el selector del header
+(`features/municipality-scope/`). `ROUTE_ACCESS` (`src/routes/routeAccess.ts`)
 es la única tabla de acceso, y hoy dice:
 
-| Ruta                           | Quién   |
-| ------------------------------ | ------- |
-| `/reportes` (listado)          | agente  |
-| `/reportes/:id` (detalle)      | los dos |
-| `/validadores`                 | los dos |
-| `/municipalidades`, `/agentes` | admin   |
+| Ruta                                      | Quién   |
+| ----------------------------------------- | ------- |
+| `/reportes` y `/reportes/:id`             | los dos |
+| `/estadisticas`                           | los dos |
+| `/denuncias` (`/privacidad` redirige acá) | los dos |
+| `/apelaciones`                            | los dos |
+| `/validadores`                            | los dos |
+| `/areas` y `/areas/:id`                   | los dos |
+| `/municipalidades`, `/agentes`            | admin   |
 
-La única entrada `exact` de la tabla es el listado de reportes, justamente para
-separarlo del detalle: el admin no tiene un listado global —mira los reportes por
-municipalidad— pero sí abre el detalle, que es a donde lleva esa tabla. Gana la
-primera coincidencia, así que la entrada exacta va antes que la de prefijo.
+Fuera de la tabla quedan las rutas sin sesión: `/login`, `/sin-permisos` y
+`/reporte/:token`, la página pública de un reporte compartido (US-030). Dentro
+de una pantalla compartida, algunas acciones siguen siendo de un rol: en
+Denuncias, descartar y desestimar por contenido son del agente; en Apelaciones,
+el agente resuelve las de su municipio y el admin, todas.
 
 La traducción de los valores que manda la API (`admin_plataforma`,
-`agente_municipal`, `validador`, `ciudadano`) a las constantes del panel vive en
-un único lugar: `ROLE_BY_API_VALUE` en `src/api/auth.ts`. Un valor desconocido
-degrada a `CITIZEN`, que es el rol con menos privilegios.
+`agente_municipal`, `validador`, `operario`, `ciudadano`) a las constantes del
+panel vive en un único lugar: `ROLE_BY_API_VALUE` en `src/api/auth.ts`. Un valor
+desconocido degrada a `CITIZEN`, que es el rol con menos privilegios. El
+operario tenía que estar en la tabla y no estaba: caía en ese default y el
+panel lo trataba como ciudadano (C-10).
 
 ### Validadores: una pantalla, dos alcances
 
@@ -579,23 +621,17 @@ el medio de la lista para que el filtro por rol produzca las dos.
 
 ### El administrador de plataforma ve reportes por municipio
 
-La vista dentro de cada municipalidad sigue existiendo y está acotada al rol
-`ADMIN_PLATAFORMA`: entrar a una municipalidad muestra sus reportes en lista y
-en mapa, igual que la app móvil. Es la lectura en contexto de un municipio; el
-listado de `/reportes` es la de gestión.
+Desde el 21/10 lo hace desde **Reportes**, con la municipalidad elegida en el
+selector del header (ver «El admin elige la municipalidad en el header»). La
+vista que había dentro de cada municipalidad —lista y mapa— se eliminó.
 
 La lista es **la misma que la del agente**, con sus filtros, su orden y su
 paginado: sale del mismo `/api/panel/reports/` acotado con `?municipality=<id>`,
-no de un endpoint aparte. Tener dos listas distintas terminaba en que el
-administrador miraba los reportes de un municipio sin poder filtrarlos, que era
-justo lo que sí podía hacer el agente sobre los mismos datos.
+no de un endpoint aparte.
 
 El filtro por municipalidad no es un agujero en la jurisdicción: el backend lo
 aplica sobre el queryset que la capa de jurisdicción ya acotó, así que a un
 agente solo podría achicarle la lista, nunca mostrarle otra.
-
-El mapa dibuja además el límite del municipio, porque el polígono y los puntos
-juntos explican por qué esos reportes y no otros cayeron ahí.
 
 ### Superficie de API propia para el panel
 
@@ -760,6 +796,11 @@ sin responsable individual —la validación colectiva, la confirmación automá
 el archivado por inactividad— no tenía forma de explicarse; ahora dice qué la
 produjo, y la colectiva agrega con cuántas confirmaciones.
 
+Desde C-15 también trae `changed_by_role`, el rol con que actuó quien hizo el
+cambio. El admin de la plataforma ejecuta las acciones con las reglas del
+agente, así que sus cambios llevan «como administración de la plataforma» al
+lado del nombre.
+
 ### Los dos cierres y la objeción, en un solo hilo (US-046 y US-048)
 
 `ResolutionThread` muestra **todos** los partes de trabajo y no el último: cuando
@@ -789,7 +830,11 @@ reporte: la calcula el backend, no el cliente.
 
 ### Protección de datos: una bandeja del admin, no del municipio (US-043)
 
-`/privacidad` es la bandeja del administrador de la plataforma para las
+> Desde el 21/10 esta bandeja es una sección de Denuncias, visible también para
+> el agente (ver «El admin elige la municipalidad en el header» más abajo). Lo que sigue describe
+> la decisión original.
+
+`/privacidad` era la bandeja del administrador de la plataforma para las
 denuncias de «dato personal visible»: un rostro o una patente que el difuminado
 no detectó. Tiene su propia entrada en `ROUTE_ACCESS`, solo para el admin, y el
 agente no la ve en el menú ni puede abrirla escribiendo la ruta. Es una sección
@@ -845,6 +890,131 @@ de validación.
   el parte de trabajo conserva la descripción, la comparación de US-015 queda
   en «no disponible» y el hilo lo muestra explícito.
 
+### Denuncias: la bandeja del agente y las apelaciones del admin (US-049)
+
+- `/denuncias` es del agente; `/apelaciones`, de los dos roles: el agente ve
+  las de su municipio y el admin, todas (decisión del usuario del 20/10; la
+  historia la dejaba solo para el admin). La reversión de oficio sigue siendo
+  solo del admin. Los dos van al final
+  del menú, como la bandeja de privacidad: no son alta de nada, se atienden
+  cuando entra algo. `/denuncias` tiene el **primer contador de la navegación**
+  (`useModerationCount`, cada minuto, solo para el agente).
+- Una tarjeta por reporte, con todas sus denuncias, y una sola decisión. Las dos
+  piden motivo (`ReasonDialog`); descartar es destructivo y avisa **antes de
+  confirmar** que el motivo será público.
+- El detalle del reporte suma `ReportModerationCard`: las denuncias y en qué
+  quedaron, el descarte vigente con su motivo público, y para el admin la
+  reversión de oficio. El descarte no aparece entre las acciones de estado: el
+  backend lo saca de `available_transitions`.
+- La tabla marca con una bandera los reportes con denuncias pendientes
+  (`pending_complaint_count`).
+
+### Estadísticas: un solo selector de período (US-023)
+
+- `/estadisticas` es del agente; el admin entra por `/municipalidades/:id/estadisticas`,
+  desde el botón de la ficha. Es una ruta propia y no una pestaña para que el
+  período de la query string no choque con los filtros del listado.
+- `useStatisticsPeriod` guarda `period`, `start` y `end` en la URL, con el mismo
+  criterio que los filtros del listado: recargar o compartir conserva la vista.
+  Un rango inválido no se aplica (queda el anterior y se dice por qué), y uno
+  inválido escrito a mano en la URL cae al default.
+- Gráficos con **shadcn charts** (Recharts), decisión del usuario. Rediseñados
+  el 21/10 a pedido del usuario:
+  - **Por categoría**, una dona (`CategoryDonut`) con el total en el centro,
+    tooltip y una leyenda al costado con cantidad y porcentaje. Las categorías en
+    cero no dibujan porción pero siguen en la leyenda.
+  - **Por estado** (`StatusBreakdown`), una barra de composición arriba y los
+    siete estados agrupados en «En curso», «Resueltos» y «Fuera del circuito»,
+    cada uno con su barrita, cantidad y porcentaje. Es HTML y no Recharts: siete
+    filas con barras finas se leen mejor que un eje.
+  - Los colores salen de `components/colors.ts`: los de estado son los mismos
+    que los puntos de `ReportStatusBadge`. Los colores son los tokens del tema (`--chart-*` y los de
+    estado), así se ven igual que los badges.
+- Las dos páginas se cargan con `lazy`: Recharts pesa unos 340 kB y no tiene que
+  bajar con el resto del panel.
+
+### Indicadores de gestión, encima de los gráficos (US-050)
+
+- `IndicatorCards`: los tres tiempos en **una sola tarjeta**, en el orden del
+  circuito y unidos por flechas (validación → asignación → resolución). La
+  validación lleva la etiqueta «Fuera del municipio» y su desglose por origen en
+  una línea. Cada tiempo lleva su cantidad de casos, y sin casos dice «Sin casos
+  en el período» en vez de un cero. Debajo, tres tarjetas parejas: abiertos,
+  cierres apelados (con una barra contra el umbral) y salidas del circuito.
+- Rediseño del 21/10, a pedido del usuario: el selector de período pasó a la
+  cabecera, se sacaron las aclaraciones de cada tarjeta (queda una sola nota al
+  pie de los tiempos) y los gráficos ya no repiten sus datos en una leyenda
+  visible: la lista quedó solo para lectores de pantalla.
+- Los tiempos promedio van **siempre en horas** (`formatHours`, «207 hs»):
+  decisión del usuario del 21/10, que reemplaza lo de la historia (horas por
+  debajo del día, días por encima). Así las tres etapas se comparan en la misma
+  unidad. La antigüedad de los abiertos, que no es un promedio, sigue en días
+  (`formatDuration`).
+- Cierres apelados con su porcentaje, destacados en rojo cuando superan el
+  umbral que manda el servidor. Abiertos, cancelaciones por origen y archivados
+  por inactividad, cada uno en su tarjeta.
+- Se muestran aunque el período no tenga reportes creados: pueden haberse
+  cerrado o validado reportes más viejos, y lo abierto no depende del período.
+
+### La página pública de un reporte compartido (US-030)
+
+- `/reporte/:token` es la **única ruta sin sesión** del panel: va fuera de
+  `ProtectedRoute` y sin el marco del panel (`PublicReportPage`), con la marca
+  arriba. Decisión del usuario: la versión web del reporte vive acá y no en una
+  página de Django.
+- Muestra la foto difuminada, categoría, estado, dirección, mapa, lo que dijo el
+  municipio y la línea de tiempo, sin el autor. Si el reporte ya no está
+  disponible lo dice, con el motivo cuando lo descartó el municipio.
+- El `404` no es un error de la pantalla sino uno de sus dos resultados: el
+  pedido acepta los dos estados (`validateStatus`) y la página elige qué dibujar.
+- «Abrir en la app» usa `urbancheck://r/<token>`.
+- **El enlace que se comparte es `/r/<token>` y no esta ruta**: lo responde el
+  backend con las etiquetas de vista previa para WhatsApp y las redes —que no
+  ejecutan JavaScript y a una SPA le verían siempre el mismo `index.html`— y
+  redirige a `/reporte/<token>`. Por eso nginx (producción) y Vite (desarrollo,
+  clave `'^/r/'`; `'/r'` como prefijo también se llevaría `/reportes`) mandan
+  `/r/` al backend, junto con `/.well-known/` para que la app abra el enlace.
+
+### El admin elige la municipalidad en el header (21/10)
+
+- Pedido del usuario: el admin de la plataforma tiene un selector (`Select`
+  `sm`) junto a «Panel municipal» y elige **una** municipalidad —no existe
+  «todas»—. Todas las pantallas leen de ahí (`useMunicipalityScope`, en
+  `features/municipality-scope/`): se eliminaron los selectores propios de
+  Agentes, Validadores y Áreas, y Privacidad y Apelaciones mandan
+  `?municipality=` con la elegida.
+- Con una sola municipalidad el selector queda deshabilitado (solo lectura),
+  con el mismo aspecto. La elección se recuerda en `localStorage`; si la
+  recordada ya no existe, toma la primera.
+- El admin pasa a tener los módulos del agente para la municipalidad elegida:
+  Reportes, Estadísticas y Denuncias. **Denuncias es de solo lectura** para el
+  admin —descartar y desestimar siguen siendo del agente (US-049)—, y el backend
+  lo impone (`ModerationViewSet.get_permissions`).
+- Las altas de agentes, validadores y áreas usan la municipalidad del header,
+  fija (`FixedMunicipalityField`): para dar de alta en otra se cambia el header.
+- Las pantallas esperan a tener la municipalidad resuelta antes de pedir datos
+  (`RequireMunicipality`): sin eso, el admin pedía por un instante los datos de
+  todas las ciudades. Sin municipalidades dadas de alta, lo dicen.
+- Para el agente nada cambia: su municipio es fijo y el panel no manda ningún id.
+- **Protección de datos ya no es una sección (21/10):** sus solicitudes viven
+  en Denuncias, junto a las de contenido, y las ven los dos roles con la imagen.
+  Un filtro por tipo en la cabecera (`?tipo=` en la URL: contenido
+  inapropiado, reporte falso o dato personal) las separa; con «Todas» van
+  mezcladas en **una sola tabla** (`ComplaintsTable`), la más vieja primero,
+  con las mismas columnas para todos los tipos (imagen, reporte, tipo,
+  recibida, plazo) y las pestañas Pendientes/Resueltas. Las de contenido no
+  tienen plazo («Sin plazo»). El agente resuelve todas las de su municipio; el
+  admin, las de dato personal (las de contenido las ve sin botones).
+- **La imagen denunciada se ve siempre** en el panel, para los dos roles y sea
+  cual sea el motivo, también en el detalle del reporte.
+  `/privacidad` redirige a `/denuncias?tipo=dato_personal`, y el contador del
+  menú suma las dos.
+- En **Municipalidades** el selector no aparece: ahí se administran todas a la
+  vez, y elegir una no aplica. El nombre de cada ciudad en esa tabla ya no
+  enlaza a una ficha con sus reportes: la ficha (`/municipalidades/:id`) y su
+  página de estadísticas se eliminaron, porque Reportes y Estadísticas, con el
+  selector, muestran lo mismo.
+
 ### Sistema visual: tokens, capa de tema y marca
 
 Toda la paleta vive en `src/index.css` como variables de shadcn. Los
@@ -893,9 +1063,7 @@ específico — `['reportes', 'list', filtros]`, `['reportes', 'detail', id]` �
 que invalidar por prefijo alcance a todas las listas filtradas de una. Ningún
 componente arma una key inline.
 
-### Roles
+## Licencia
 
-El panel solo admite `ADMIN_PLATAFORMA` y `AGENTE_MUNICIPAL`, y cada uno ve lo
-suyo: las municipalidades y los agentes son del administrador de la plataforma;
-los reportes y los validadores, del agente municipal. Cualquier otro rol con
-sesión válida recibe la pantalla de permisos insuficientes.
+Propietaria, todos los derechos reservados: ver [`LICENSE`](LICENSE). Es la
+misma en los tres repositorios de UrbanCheck (C-14).

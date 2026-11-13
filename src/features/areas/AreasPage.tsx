@@ -5,25 +5,16 @@ import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { PageHeader } from '@/components/common/PageHeader'
 import { QueryState } from '@/components/common/QueryState'
 import { Card, CardContent } from '@/components/ui/card'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { messages } from '@/config/messages'
-import { useMunicipalities } from '@/features/platform-admin/api/municipalities'
+import { RequireMunicipality } from '@/features/municipality-scope/RequireMunicipality'
+import { useMunicipalityScope } from '@/features/municipality-scope/context'
 import { useAuth } from '@/hooks/useAuth'
 import { ROLES, type AccountState } from '@/types/auth'
 import { useAreas, useSetAreaActive } from './api/areas'
 import { AreaFormDialog } from './components/AreaFormDialog'
 import { AreasTable } from './components/AreasTable'
 import type { OperationalArea } from './types'
-
-/** Valor del filtro cuando no hay municipalidad elegida. */
-const ALL_MUNICIPALITIES = 'all'
 
 /**
  * US-039 — alta, edición, listado y baja lógica de áreas operativas.
@@ -34,16 +25,23 @@ const ALL_MUNICIPALITIES = 'all'
  * el servidor con `?state=`.
  */
 export function AreasPage() {
+  // El admin ve la municipalidad elegida en el header: hasta que esté resuelta
+  // no se pide nada, para no traer por un instante los datos de todas.
+  return (
+    <RequireMunicipality>
+      <AreasPageContent />
+    </RequireMunicipality>
+  )
+}
+
+function AreasPageContent() {
   const { role } = useAuth()
   const isAdmin = role === ROLES.PLATFORM_ADMIN
-  const [municipalityFilter, setMunicipalityFilter] = useState(ALL_MUNICIPALITIES)
   const [tab, setTab] = useState<AccountState>('active')
 
-  const municipalities = useMunicipalities({ enabled: isAdmin })
-  const scope =
-    isAdmin && municipalityFilter !== ALL_MUNICIPALITIES
-      ? { municipalityId: Number(municipalityFilter) }
-      : {}
+  // El admin ve la municipalidad elegida en el header; el agente, la suya.
+  const { municipalityId, current } = useMunicipalityScope()
+  const scope = municipalityId === undefined ? {} : { municipalityId }
   const active = useAreas({ ...scope, state: 'active' })
   const archived = useAreas({ ...scope, state: 'inactive' })
   const setActive = useSetAreaActive()
@@ -70,29 +68,11 @@ export function AreasPage() {
         }
         actions={
           <>
-            {isAdmin && (
-              <Select value={municipalityFilter} onValueChange={setMunicipalityFilter}>
-                <SelectTrigger
-                  className="w-56"
-                  aria-label={messages.areas.filterByMunicipality}
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL_MUNICIPALITIES}>
-                    {messages.areas.allMunicipalities}
-                  </SelectItem>
-                  {municipalities.data?.map((municipality) => (
-                    <SelectItem key={municipality.id} value={String(municipality.id)}>
-                      {municipality.city} — {municipality.province}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {(!isAdmin || current) && (
+              <AreaFormDialog
+                municipality={isAdmin ? (current ?? undefined) : undefined}
+              />
             )}
-            <AreaFormDialog
-              municipalities={isAdmin ? (municipalities.data ?? []) : undefined}
-            />
           </>
         }
       />
@@ -122,15 +102,12 @@ export function AreasPage() {
                 error={active.error}
                 onRetry={() => void active.refetch()}
                 isEmpty={active.data?.length === 0}
-                emptyMessage={
-                  municipalityFilter === ALL_MUNICIPALITIES
-                    ? messages.areas.empty
-                    : messages.areas.emptyForMunicipality
-                }
+                emptyMessage={messages.areas.emptyForMunicipality}
               >
                 <AreasTable
                   areas={active.data ?? []}
-                  showMunicipality={isAdmin}
+                  // Toda la lista es de la misma municipalidad, la del header.
+                  showMunicipality={false}
                   actionLabel={messages.areas.deactivate}
                   onAction={setPendingDeactivation}
                 />
@@ -155,7 +132,8 @@ export function AreasPage() {
               >
                 <AreasTable
                   areas={archived.data ?? []}
-                  showMunicipality={isAdmin}
+                  // Toda la lista es de la misma municipalidad, la del header.
+                  showMunicipality={false}
                   actionLabel={messages.areas.activate}
                   // Reactivar no le saca nada a nadie: no pide confirmación.
                   onAction={(area) => void toggle(area, true)}

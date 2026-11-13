@@ -143,14 +143,18 @@ describe('ValidatorsPage, como admin de la plataforma', () => {
     signedInAs(ROLES.PLATFORM_ADMIN)
   })
 
-  it('shows which municipality each validator belongs to', async () => {
+  it('no repite la municipalidad en cada fila: es la del header', async () => {
+    // Desde el selector del header (21/10) toda la lista es de una sola
+    // municipalidad, y la columna no diría nada.
     renderWithProviders(<ValidatorsPage />)
 
     const row = await screen.findByRole('row', { name: /Validador Uno/ })
-    expect(within(row).getByText(VILLA_MARIA.city)).toBeInTheDocument()
+    expect(within(row).queryByText(VILLA_MARIA.city)).toBeNull()
   })
 
-  it('lets the admin pick the municipality when creating one', async () => {
+  it('el alta usa la municipalidad del header, fija', async () => {
+    // Decisión del usuario (21/10): el admin elige la municipalidad una vez, en
+    // el header, y las altas van a esa. El formulario la muestra como dato.
     const post = vi.spyOn(apiClient, 'post').mockResolvedValue({ data: ACTIVE })
     const user = userEvent.setup()
 
@@ -158,59 +162,29 @@ describe('ValidatorsPage, como admin de la plataforma', () => {
     await user.click(
       await screen.findByRole('button', { name: messages.validators.create }),
     )
-    await user.type(await screen.findByLabelText(messages.validators.name), 'Ana')
+    expect(await screen.findByText('Villa María, Córdoba')).toBeInTheDocument()
+    await user.type(screen.getByLabelText(messages.validators.name), 'Ana')
     await user.type(screen.getByLabelText(messages.validators.email), 'a@muni.gob.ar')
     await user.type(
       screen.getByLabelText(messages.validators.temporaryPassword),
       'Xk7#mP9@qLz2!',
     )
-    await user.click(screen.getByLabelText(messages.validators.municipality))
-    await user.click(await screen.findByRole('option', { name: /Villa Nueva/ }))
     await user.click(screen.getByRole('button', { name: messages.common.save }))
 
     await waitFor(() => expect(post).toHaveBeenCalled())
-    expect(post.mock.calls[0][1]).toMatchObject({
-      municipality_id: VILLA_NUEVA.id,
-    })
+    expect(post.mock.calls[0][1]).toMatchObject({ municipality_id: VILLA_MARIA.id })
   })
 
-  it('does not submit without a municipality', async () => {
-    const post = vi.spyOn(apiClient, 'post').mockResolvedValue({ data: ACTIVE })
-    const user = userEvent.setup()
-
-    renderWithProviders(<ValidatorsPage />)
-    await user.click(
-      await screen.findByRole('button', { name: messages.validators.create }),
-    )
-    await user.type(await screen.findByLabelText(messages.validators.name), 'Ana')
-    await user.type(screen.getByLabelText(messages.validators.email), 'a@muni.gob.ar')
-    await user.type(
-      screen.getByLabelText(messages.validators.temporaryPassword),
-      'Xk7#mP9@qLz2!',
-    )
-    await user.click(screen.getByRole('button', { name: messages.common.save }))
-
-    expect(await screen.findByText('Elegí una municipalidad.')).toBeInTheDocument()
-    expect(post).not.toHaveBeenCalled()
-  })
-
-  it('filters the listing by municipality', async () => {
+  it('pide los validadores de la municipalidad del header, sin filtro propio', async () => {
     const get = vi.spyOn(apiClient, 'get')
-    const user = userEvent.setup()
 
     renderWithProviders(<ValidatorsPage />)
     await screen.findByRole('row', { name: /Validador Uno/ })
 
-    await user.click(screen.getByLabelText(messages.validators.filterByMunicipality))
-    await user.click(await screen.findByRole('option', { name: /Villa Nueva/ }))
-
-    // El filtro de municipalidad viaja junto al de estado: son dos cortes de
-    // la misma lista, y la pestaña elegida no se pierde al cambiar de municipio.
-    await waitFor(() =>
-      expect(get).toHaveBeenCalledWith('/api/validators/', {
-        params: { state: 'active', municipality: VILLA_NUEVA.id },
-      }),
-    )
+    expect(screen.queryByLabelText(messages.validators.filterByMunicipality)).toBeNull()
+    expect(get).toHaveBeenCalledWith('/api/validators/', {
+      params: { state: 'active', municipality: VILLA_MARIA.id },
+    })
   })
 
   it('un validador archivado sale del listado principal', async () => {
@@ -219,10 +193,12 @@ describe('ValidatorsPage, como admin de la plataforma', () => {
 
     renderWithProviders(<ValidatorsPage />)
 
-    expect(await screen.findByText(messages.validators.empty)).toBeInTheDocument()
+    expect(
+      await screen.findByText(messages.validators.emptyForMunicipality),
+    ).toBeInTheDocument()
     expect(screen.queryByRole('row', { name: /Validador Uno/ })).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('tab', { name: /Archivados/ }))
+    await user.click(await screen.findByRole('tab', { name: /Archivados/ }))
 
     const row = await screen.findByRole('row', { name: /Validador Uno/ })
     expect(within(row).getByText(messages.validators.inactive)).toBeInTheDocument()
@@ -236,7 +212,7 @@ describe('ValidatorsPage, como admin de la plataforma', () => {
     const user = userEvent.setup()
 
     renderWithProviders(<ValidatorsPage />)
-    await user.click(screen.getByRole('tab', { name: /Archivados/ }))
+    await user.click(await screen.findByRole('tab', { name: /Archivados/ }))
     await screen.findByRole('row', { name: /Validador Uno/ })
 
     await user.click(screen.getByRole('button', { name: messages.validators.activate }))

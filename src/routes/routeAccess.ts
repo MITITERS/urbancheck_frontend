@@ -24,13 +24,10 @@ export const ADMIN_ONLY: readonly Role[] = [ROLES.PLATFORM_ADMIN]
 export const AGENT_ONLY: readonly Role[] = [ROLES.MUNICIPAL_AGENT]
 
 export const ROUTE_ACCESS: readonly RouteAccess[] = [
-  // El listado global de reportes es del agente: el admin los mira por
-  // municipalidad, desde la ficha de cada una. La entrada exacta va primero
-  // porque gana la primera que coincide.
-  { prefix: '/reportes', roles: AGENT_ONLY, exact: true },
-  // El detalle sí lo abren los dos: es a donde lleva la tabla de reportes de
-  // una municipalidad, y es donde viven las acciones de estado.
+  // Reportes, estadísticas y denuncias los ven los dos roles: el agente, los de
+  // su municipio; el admin, los de la municipalidad que eligió en el header.
   { prefix: '/reportes', roles: PANEL_ROLES },
+  { prefix: '/estadisticas', roles: PANEL_ROLES },
   { prefix: '/validadores', roles: PANEL_ROLES },
   // Las áreas operativas las gestiona el agente en su jurisdicción; el admin,
   // que no está acotado a ninguna, las ve todas y elige municipalidad al dar
@@ -38,18 +35,24 @@ export const ROUTE_ACCESS: readonly RouteAccess[] = [
   { prefix: '/areas', roles: PANEL_ROLES },
   { prefix: '/municipalidades', roles: ADMIN_ONLY },
   { prefix: '/agentes', roles: ADMIN_ONLY },
-  // La protección de datos es obligación de la plataforma, no del municipio
-  // (US-043): el agente no resuelve estas solicitudes ni ve la bandeja.
-  { prefix: '/privacidad', roles: ADMIN_ONLY },
+  // Protección de datos se unió a Denuncias (21/10); la ruta vieja redirige.
+  { prefix: '/privacidad', roles: PANEL_ROLES },
+  // La moderación de contenido es del agente: no existe un rol moderador
+  // (US-049). Las apelaciones contra los descartes las resuelven el agente
+  // —las de su municipio— y el admin —todas—: decisión del usuario del 20/10.
+  // El admin la ve pero no resuelve: descartar y desestimar son del agente.
+  { prefix: '/denuncias', roles: PANEL_ROLES },
+  { prefix: '/apelaciones', roles: PANEL_ROLES },
 ]
 
 /** Primera pantalla de cada rol, y destino de «volver al inicio». */
 const HOME_BY_ROLE: Record<Role, string> = {
   [ROLES.PLATFORM_ADMIN]: '/municipalidades',
   [ROLES.MUNICIPAL_AGENT]: '/reportes',
-  // Ninguno de los dos entra al panel; el valor existe para que el tipo sea
+  // Ninguno de estos entra al panel; el valor existe para que el tipo sea
   // total y nunca se devuelva `undefined`.
   [ROLES.VALIDATOR]: '/reportes',
+  [ROLES.OPERATOR]: '/reportes',
   [ROLES.CITIZEN]: '/reportes',
 }
 

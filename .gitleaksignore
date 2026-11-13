@@ -1,0 +1,6 @@
+# Excepciones revisadas de gitleaks (N-12). Cada línea es la huella de un
+# hallazgo: commit:archivo:regla:línea. Solo falsos positivos, con su motivo.
+
+# Token de prueba (un UUID inventado) del test de la página pública; no es una
+# credencial. Revisado el 29/10/2026.
+c883c23f601e6d0e8f16c4c72aac17fdc4df2e2d:src/features/public-report/PublicReportPage.test.tsx:generic-api-key:13

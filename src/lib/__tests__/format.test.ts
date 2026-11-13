@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { shortAddress } from '../format'
+import { shortAddress, streetAddress } from '../format'
 
 describe('shortAddress', () => {
   it('corta la cola administrativa que agrega el geocodificador', () => {
@@ -22,5 +22,31 @@ describe('shortAddress', () => {
   it('sin dirección devuelve vacío', () => {
     expect(shortAddress(null)).toBe('')
     expect(shortAddress('')).toBe('')
+  })
+})
+
+describe('streetAddress', () => {
+  it('pone el número detrás de la calle', () => {
+    expect(
+      streetAddress(
+        '527, Corrientes, Centro, Villa María, Municipio de Villa María, Córdoba, 5900, Argentina',
+      ),
+    ).toBe('Corrientes 527')
+  })
+
+  it('saltea el nombre del lugar que va adelante', () => {
+    expect(
+      streetAddress('Banco Patagonia, 1145, Santa Fe, Centro, Villa María, Argentina'),
+    ).toBe('Santa Fe 1145')
+  })
+
+  it('sin número deja el primer tramo', () => {
+    expect(streetAddress('Corrientes, Centro, Villa María')).toBe('Corrientes')
+    expect(streetAddress('Frente a la plaza')).toBe('Frente a la plaza')
+  })
+
+  it('vacío devuelve vacío', () => {
+    expect(streetAddress('')).toBe('')
+    expect(streetAddress(null)).toBe('')
   })
 })

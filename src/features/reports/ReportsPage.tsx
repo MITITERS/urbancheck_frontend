@@ -2,6 +2,8 @@ import { PageHeader } from '@/components/common/PageHeader'
 import { QueryState } from '@/components/common/QueryState'
 import { Card, CardContent } from '@/components/ui/card'
 import { messages } from '@/config/messages'
+import { useMunicipalityScope } from '@/features/municipality-scope/context'
+import { RequireMunicipality } from '@/features/municipality-scope/RequireMunicipality'
 import { useReports } from './api/reports'
 import { Pagination } from './components/Pagination'
 import { ReportFilters } from './components/ReportFilters'
@@ -11,21 +13,30 @@ import { useReportFilters } from './hooks/useReportFilters'
 /**
  * US-012 — pantalla principal del panel: listado y filtros de reportes.
  *
- * Es del agente municipal, y muestra los de su jurisdicción. El administrador
- * de la plataforma no tiene un listado global: mira los reportes por
- * municipalidad, desde la ficha de cada una.
+ * El agente ve los de su jurisdicción; el administrador de la plataforma, los de
+ * la municipalidad que eligió en el header.
  */
 export function ReportsPage() {
-  const { filters, update, clear, isFiltered, orderings } = useReportFilters()
-  const query = useReports(filters)
-
   return (
     <div className="space-y-6">
       <PageHeader
         title={messages.reports.title}
         description={messages.reports.description}
       />
+      <RequireMunicipality>
+        <ReportsList />
+      </RequireMunicipality>
+    </div>
+  )
+}
 
+function ReportsList() {
+  const { filters, update, clear, isFiltered, orderings } = useReportFilters()
+  const { municipalityId } = useMunicipalityScope()
+  const query = useReports(filters, municipalityId)
+
+  return (
+    <div className="space-y-6">
       <ReportFilters
         filters={filters}
         orderings={orderings}

@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { ArrowUpRight, Spline, Users } from 'lucide-react'
+import { Spline, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { PageHeader } from '@/components/common/PageHeader'
@@ -87,17 +86,9 @@ export function MunicipalitiesPage() {
                 {query.data?.map((municipality) => (
                   <TableRow key={municipality.id} className="group">
                     <TableCell className="font-medium">
-                      {/* Entrar al municipio muestra sus reportes. */}
-                      <Link
-                        to={`/municipalidades/${municipality.id}`}
-                        className="inline-flex items-center gap-1 text-primary underline-offset-4 group-hover:underline"
-                      >
-                        {municipality.city}
-                        <ArrowUpRight
-                          className="size-3.5 opacity-0 transition-opacity group-hover:opacity-100"
-                          aria-hidden
-                        />
-                      </Link>
+                      {/* Solo el nombre: los reportes de cada ciudad se ven en
+                          Reportes, eligiéndola en el selector del header. */}
+                      {municipality.city}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {municipality.province}

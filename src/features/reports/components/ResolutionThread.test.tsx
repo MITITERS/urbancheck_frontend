@@ -76,6 +76,9 @@ function detail(overrides: Partial<PanelReportDetail> = {}): PanelReportDetail {
     closed_at: '2026-09-01T10:00:00Z',
     objection_deadline: '2026-09-08T10:00:00Z',
     appeal_count: 0,
+    complaints: [],
+    pending_complaint_count: 0,
+    moderation: null,
     ...overrides,
   }
 }

@@ -19,21 +19,34 @@ const PAGE_SIZE = 100
 
 async function fetchPrivacyRequests(
   state: PrivacyRequestState,
+  municipalityId?: number,
 ): Promise<PrivacyRequest[]> {
   const { data } = await apiClient.get<Paginated<PrivacyRequest>>(
     endpoints.privacyRequests.list,
     // El orden lo decide el servidor: las pendientes de la más vieja a la más
     // nueva —con un plazo único, eso pone primero las vencidas— y las
     // resueltas de la decisión más reciente a la más vieja.
-    { params: { state, page_size: PAGE_SIZE } },
+    {
+      params: {
+        state,
+        page_size: PAGE_SIZE,
+        // La municipalidad elegida en el header.
+        ...(municipalityId === undefined ? {} : { municipality: municipalityId }),
+      },
+    },
   )
   return data.results
 }
 
-export function usePrivacyRequests(state: PrivacyRequestState) {
+export function usePrivacyRequests(
+  state: PrivacyRequestState,
+  municipalityId?: number,
+  { enabled = true }: { enabled?: boolean } = {},
+) {
   return useQuery({
-    queryKey: privacyRequestKeys.list({ state }),
-    queryFn: () => fetchPrivacyRequests(state),
+    queryKey: privacyRequestKeys.list({ state, municipality: municipalityId }),
+    queryFn: () => fetchPrivacyRequests(state, municipalityId),
+    enabled,
     refetchInterval: REFRESH_MS,
   })
 }

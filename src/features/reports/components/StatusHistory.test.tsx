@@ -141,3 +141,33 @@ describe('origen de la transición (US-038)', () => {
     expect(screen.queryByText(/manual/i)).not.toBeInTheDocument()
   })
 })
+
+describe('StatusHistory: con qué rol actuó (C-15)', () => {
+  const ADMIN = { id: 1, name: 'Admin Plataforma', avatar: null }
+
+  it('marca el cambio que hizo el admin de la plataforma', () => {
+    // El admin ejecuta las acciones con las reglas del agente: sin la marca, el
+    // asiento no deja ver que no fue el municipio.
+    render(
+      <StatusHistory
+        entries={[
+          { ...HISTORY[1], changed_by: ADMIN, changed_by_role: 'admin_plataforma' },
+        ]}
+      />,
+    )
+
+    expect(
+      screen.getByText(new RegExp(labels.actedAsPlatformAdmin)),
+    ).toBeInTheDocument()
+  })
+
+  it('no marca los del agente municipal', () => {
+    render(
+      <StatusHistory
+        entries={[{ ...HISTORY[1], changed_by_role: 'agente_municipal' }]}
+      />,
+    )
+
+    expect(screen.queryByText(new RegExp(labels.actedAsPlatformAdmin))).toBeNull()
+  })
+})

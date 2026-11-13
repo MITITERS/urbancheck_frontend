@@ -1,22 +1,15 @@
 import { useState } from 'react'
-import { Controller, useForm } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
-import { Field, FieldError, FieldLabel } from '@/components/ui/field'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { FormDialog } from '@/components/common/FormDialog'
 import { TextField } from '@/components/common/TextField'
 import { messages } from '@/config/messages'
+import { FixedMunicipalityField } from '@/features/municipality-scope/FixedMunicipalityField'
+import type { Municipality } from '@/types/auth'
 import { applyFieldErrors } from '@/lib/forms'
-import type { MunicipalityDetail } from '@/features/platform-admin/types'
 import { useCreateArea, useUpdateArea } from '../api/areas'
 import type { OperationalArea } from '../types'
 
@@ -46,7 +39,8 @@ const FIELD_MAP = {
 
 interface AreaFormDialogProps {
   /** Municipalidades entre las que elegir. Sin esto, no hay selector. */
-  municipalities?: MunicipalityDetail[]
+  /** Solo en el alta del admin: la municipalidad elegida en el header. */
+  municipality?: Municipality
   /** Cuando viene, el diálogo edita esa área en lugar de crear una nueva. */
   area?: OperationalArea
   trigger?: React.ReactNode
@@ -63,24 +57,18 @@ interface AreaFormDialogProps {
  * Editar no ofrece el selector ni cuando lo mira el admin: la jurisdicción de
  * un área no se muda, y el backend ignora el campo en una edición.
  */
-export function AreaFormDialog({ municipalities, area, trigger }: AreaFormDialogProps) {
+export function AreaFormDialog({ municipality, area, trigger }: AreaFormDialogProps) {
   const [open, setOpen] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const isEdit = area !== undefined
   const createArea = useCreateArea()
   const updateArea = useUpdateArea(area?.id ?? 0)
   const mutation = isEdit ? updateArea : createArea
-  const choosesMunicipality = !isEdit && municipalities !== undefined
+  // Editar no muda el área de jurisdicción: la municipalidad va solo en el alta.
+  const fixedMunicipality = isEdit ? undefined : municipality
 
   const form = useForm<AreaForm>({
-    resolver: zodResolver(
-      choosesMunicipality
-        ? schema.refine((values) => values.municipalityId !== '', {
-            path: ['municipalityId'],
-            message: 'Elegí una municipalidad.',
-          })
-        : schema,
-    ),
+    resolver: zodResolver(schema),
     defaultValues: {
       name: area?.name ?? '',
       contactEmail: area?.contact_email ?? '',
@@ -109,9 +97,7 @@ export function AreaFormDialog({ municipalities, area, trigger }: AreaFormDialog
         name: values.name,
         contactEmail: values.contactEmail,
         contactPhone: values.contactPhone,
-        ...(choosesMunicipality
-          ? { municipalityId: Number(values.municipalityId) }
-          : {}),
+        ...(fixedMunicipality ? { municipalityId: fixedMunicipality.id } : {}),
       })
       toast.success(isEdit ? messages.areas.updated : messages.areas.created)
       handleOpenChange(false)
@@ -124,13 +110,7 @@ export function AreaFormDialog({ municipalities, area, trigger }: AreaFormDialog
     <FormDialog
       open={open}
       onOpenChange={handleOpenChange}
-      trigger={
-        trigger ?? (
-          <Button disabled={municipalities?.length === 0}>
-            {messages.areas.create}
-          </Button>
-        )
-      }
+      trigger={trigger ?? <Button>{messages.areas.create}</Button>}
       title={isEdit ? messages.areas.editTitle : messages.areas.createTitle}
       error={formError}
       isSubmitting={form.formState.isSubmitting}
@@ -154,30 +134,10 @@ export function AreaFormDialog({ municipalities, area, trigger }: AreaFormDialog
         label={messages.areas.contactPhone}
         description={messages.areas.contactPhoneHint}
       />
-      {choosesMunicipality && (
-        <Controller
-          control={form.control}
-          name="municipalityId"
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor={field.name}>
-                {messages.areas.municipality}
-              </FieldLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger id={field.name} aria-invalid={fieldState.invalid}>
-                  <SelectValue placeholder={messages.areas.municipalityPlaceholder} />
-                </SelectTrigger>
-                <SelectContent>
-                  {municipalities.map((municipality) => (
-                    <SelectItem key={municipality.id} value={String(municipality.id)}>
-                      {municipality.city} — {municipality.province}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
+      {fixedMunicipality && (
+        <FixedMunicipalityField
+          label={messages.areas.municipality}
+          municipality={fixedMunicipality}
         />
       )}
     </FormDialog>

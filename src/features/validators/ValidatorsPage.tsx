@@ -5,25 +5,16 @@ import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { PageHeader } from '@/components/common/PageHeader'
 import { QueryState } from '@/components/common/QueryState'
 import { Card, CardContent } from '@/components/ui/card'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { messages } from '@/config/messages'
-import { useMunicipalities } from '@/features/platform-admin/api/municipalities'
+import { RequireMunicipality } from '@/features/municipality-scope/RequireMunicipality'
+import { useMunicipalityScope } from '@/features/municipality-scope/context'
 import { useAuth } from '@/hooks/useAuth'
 import { ROLES, type AccountState } from '@/types/auth'
 import { useSetValidatorActive, useValidators } from './api/validators'
 import { ValidatorFormDialog } from './components/ValidatorFormDialog'
 import { ValidatorsTable } from './components/ValidatorsTable'
 import type { Validator } from './types'
-
-/** Valor del filtro cuando no hay municipalidad elegida. */
-const ALL_MUNICIPALITIES = 'all'
 
 /**
  * US-035 — alta, listado y baja lógica de validadores.
@@ -40,17 +31,24 @@ const ALL_MUNICIPALITIES = 'all'
  * distintos de la misma lista, no dos listas.
  */
 export function ValidatorsPage() {
+  // El admin ve la municipalidad elegida en el header: hasta que esté resuelta
+  // no se pide nada, para no traer por un instante los datos de todas.
+  return (
+    <RequireMunicipality>
+      <ValidatorsPageContent />
+    </RequireMunicipality>
+  )
+}
+
+function ValidatorsPageContent() {
   const { role } = useAuth()
   const isAdmin = role === ROLES.PLATFORM_ADMIN
-  const [municipalityFilter, setMunicipalityFilter] = useState(ALL_MUNICIPALITIES)
   const [tab, setTab] = useState<AccountState>('active')
 
-  // Solo el admin necesita la lista: es el único que elige municipalidad.
-  const municipalities = useMunicipalities({ enabled: isAdmin })
-  const scope =
-    isAdmin && municipalityFilter !== ALL_MUNICIPALITIES
-      ? { municipalityId: Number(municipalityFilter) }
-      : {}
+  // El admin ve la municipalidad elegida en el header; el agente, la suya, que
+  // acota el servidor sin que el panel mande nada.
+  const { municipalityId, current } = useMunicipalityScope()
+  const scope = municipalityId === undefined ? {} : { municipalityId }
   // Las dos se piden juntas: es lo que pone el número en el rótulo desde el
   // primer render y hace instantáneo el cambio de pestaña.
   const active = useValidators({ ...scope, state: 'active' })
@@ -79,37 +77,17 @@ export function ValidatorsPage() {
       <PageHeader
         title={messages.validators.title}
         description={
-          !isAdmin
-            ? messages.validators.description
-            : municipalities.data?.length === 0
-              ? messages.validators.noMunicipalities
-              : messages.validators.adminDescription
+          isAdmin
+            ? messages.validators.adminDescription
+            : messages.validators.description
         }
         actions={
           <>
-            {isAdmin && (
-              <Select value={municipalityFilter} onValueChange={setMunicipalityFilter}>
-                <SelectTrigger
-                  className="w-56"
-                  aria-label={messages.validators.filterByMunicipality}
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL_MUNICIPALITIES}>
-                    {messages.validators.allMunicipalities}
-                  </SelectItem>
-                  {municipalities.data?.map((municipality) => (
-                    <SelectItem key={municipality.id} value={String(municipality.id)}>
-                      {municipality.city} — {municipality.province}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {(!isAdmin || current) && (
+              <ValidatorFormDialog
+                municipality={isAdmin ? (current ?? undefined) : undefined}
+              />
             )}
-            <ValidatorFormDialog
-              municipalities={isAdmin ? (municipalities.data ?? []) : undefined}
-            />
           </>
         }
       />
@@ -139,15 +117,12 @@ export function ValidatorsPage() {
                 error={active.error}
                 onRetry={() => void active.refetch()}
                 isEmpty={active.data?.length === 0}
-                emptyMessage={
-                  municipalityFilter === ALL_MUNICIPALITIES
-                    ? messages.validators.empty
-                    : messages.validators.emptyForMunicipality
-                }
+                emptyMessage={messages.validators.emptyForMunicipality}
               >
                 <ValidatorsTable
                   validators={active.data ?? []}
-                  showMunicipality={isAdmin}
+                  // Toda la lista es de la misma municipalidad, la del header.
+                  showMunicipality={false}
                   actionLabel={messages.validators.deactivate}
                   onAction={setPendingDeactivation}
                 />
@@ -168,15 +143,12 @@ export function ValidatorsPage() {
                 error={archived.error}
                 onRetry={() => void archived.refetch()}
                 isEmpty={archived.data?.length === 0}
-                emptyMessage={
-                  municipalityFilter === ALL_MUNICIPALITIES
-                    ? messages.validators.emptyArchived
-                    : messages.validators.emptyArchivedForMunicipality
-                }
+                emptyMessage={messages.validators.emptyArchivedForMunicipality}
               >
                 <ValidatorsTable
                   validators={archived.data ?? []}
-                  showMunicipality={isAdmin}
+                  // Toda la lista es de la misma municipalidad, la del header.
+                  showMunicipality={false}
                   actionLabel={messages.validators.activate}
                   isReactivation
                   // Reactivar no le saca nada a nadie: no pide confirmación.

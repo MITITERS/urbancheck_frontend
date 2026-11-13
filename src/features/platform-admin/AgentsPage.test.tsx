@@ -4,8 +4,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { apiClient } from '@/api/client'
 import { messages } from '@/config/messages'
 import { renderWithProviders } from '@/test/renderWithProviders'
+import { ROLES } from '@/types/auth'
 import { AgentsPage } from './AgentsPage'
 import type { MunicipalAgent } from './types'
+
+// La pantalla es del admin: la municipalidad la elige en el header, y el
+// proveedor de alcance toma la primera de la lista.
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: () => ({ role: ROLES.PLATFORM_ADMIN, user: null }),
+}))
 
 /** El config de la instancia compartida, sin importar axios (regla del repo). */
 type RequestConfig = Parameters<typeof apiClient.get>[1]
@@ -93,10 +100,12 @@ describe('AgentsPage', () => {
     renderWithProviders(<AgentsPage />)
 
     // La pestaña abierta es la de habilitados, y ahí no está.
-    expect(await screen.findByText(messages.agents.empty)).toBeInTheDocument()
+    expect(
+      await screen.findByText(messages.agents.emptyForMunicipality),
+    ).toBeInTheDocument()
     expect(screen.queryByRole('row', { name: /Agente Uno/ })).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('tab', { name: /Archivados/ }))
+    await user.click(await screen.findByRole('tab', { name: /Archivados/ }))
 
     const row = await screen.findByRole('row', { name: /Agente Uno/ })
     expect(within(row).getByText(messages.agents.inactive)).toBeInTheDocument()
@@ -112,7 +121,7 @@ describe('AgentsPage', () => {
     const user = userEvent.setup()
 
     renderWithProviders(<AgentsPage />)
-    await user.click(screen.getByRole('tab', { name: /Archivados/ }))
+    await user.click(await screen.findByRole('tab', { name: /Archivados/ }))
     await screen.findByRole('row', { name: /Agente Uno/ })
 
     // El botón está, pero apagado y con el motivo: esconderlo dejaría al admin
@@ -133,7 +142,7 @@ describe('AgentsPage', () => {
     const user = userEvent.setup()
 
     renderWithProviders(<AgentsPage />)
-    await user.click(screen.getByRole('tab', { name: /Archivados/ }))
+    await user.click(await screen.findByRole('tab', { name: /Archivados/ }))
     await screen.findByRole('row', { name: /Agente Uno/ })
 
     // Reactivar no le saca nada a nadie: va directo.
@@ -144,55 +153,30 @@ describe('AgentsPage', () => {
     )
   })
 
-  it('cada pestaña pide su propia lista al servidor', async () => {
+  it('las dos pestañas piden los agentes de la municipalidad del header', async () => {
+    // Ya no hay filtro en la página (21/10): la municipalidad se elige una vez,
+    // en el header, y vale para todo el panel.
     const get = vi.spyOn(apiClient, 'get')
 
     renderWithProviders(<AgentsPage />)
     await screen.findByRole('row', { name: /Agente Uno/ })
 
-    // Las archivadas no viajan en la respuesta del listado principal: el corte
-    // lo hace el servidor, no la pantalla.
-    expect(get).toHaveBeenCalledWith('/api/municipal-agents/', {
-      params: { state: 'active' },
-    })
-    expect(get).toHaveBeenCalledWith('/api/municipal-agents/', {
-      params: { state: 'inactive' },
-    })
+    expect(screen.queryByLabelText(messages.agents.filterByMunicipality)).toBeNull()
+    for (const state of ['active', 'inactive']) {
+      expect(get).toHaveBeenCalledWith('/api/municipal-agents/', {
+        params: { state, municipality: VILLA_MARIA.id },
+      })
+    }
   })
 
-  it('filtra el listado por municipalidad', async () => {
-    const get = vi.spyOn(apiClient, 'get')
+  it('el alta usa la municipalidad del header, fija', async () => {
     const user = userEvent.setup()
-
     renderWithProviders(<AgentsPage />)
-    await screen.findByRole('row', { name: /Agente Uno/ })
 
-    await user.click(screen.getByLabelText(messages.agents.filterByMunicipality))
-    await user.click(await screen.findByRole('option', { name: /Bell Ville/ }))
-
-    // El filtro viaja junto al de estado: son dos cortes de la misma lista, y
-    // elegir un municipio no saca de la pestaña en la que se estaba.
-    await waitFor(() =>
-      expect(get).toHaveBeenCalledWith('/api/municipal-agents/', {
-        params: { state: 'active', municipality: BELL_VILLE.id },
-      }),
+    await user.click(
+      await screen.findByRole('button', { name: messages.agents.create }),
     )
-  })
 
-  it('el filtro alcanza también a la pestaña de archivados', async () => {
-    const get = vi.spyOn(apiClient, 'get')
-    const user = userEvent.setup()
-
-    renderWithProviders(<AgentsPage />)
-    await screen.findByRole('row', { name: /Agente Uno/ })
-
-    await user.click(screen.getByLabelText(messages.agents.filterByMunicipality))
-    await user.click(await screen.findByRole('option', { name: /Bell Ville/ }))
-
-    await waitFor(() =>
-      expect(get).toHaveBeenCalledWith('/api/municipal-agents/', {
-        params: { state: 'inactive', municipality: BELL_VILLE.id },
-      }),
-    )
+    expect(await screen.findByText('Villa María, Córdoba')).toBeInTheDocument()
   })
 })

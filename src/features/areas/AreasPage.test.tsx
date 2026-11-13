@@ -74,7 +74,9 @@ describe('AreasPage', () => {
     expect(screen.queryByLabelText(messages.areas.municipality)).not.toBeInTheDocument()
   })
 
-  it('el administrador elige la municipalidad en el alta', async () => {
+  it('el alta del administrador va a la municipalidad del header, fija', async () => {
+    // Decisión del usuario (21/10): se elige una vez, en el header, y el
+    // formulario la muestra como dato en vez de ofrecer un selector.
     mockedRole.current = ROLES.PLATFORM_ADMIN
     stubApi()
     const user = userEvent.setup()
@@ -83,8 +85,9 @@ describe('AreasPage', () => {
     await user.click(await screen.findByRole('button', { name: messages.areas.create }))
 
     expect(
-      await screen.findByLabelText(messages.areas.municipality),
+      await screen.findByText(messages.municipalityScope.fixed),
     ).toBeInTheDocument()
+    expect(screen.queryByRole('combobox')).toBeNull()
   })
 
   it('da de alta un área con nombre y datos de contacto', async () => {

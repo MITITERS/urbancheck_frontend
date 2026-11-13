@@ -5,18 +5,12 @@ import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { PageHeader } from '@/components/common/PageHeader'
 import { QueryState } from '@/components/common/QueryState'
 import { Card, CardContent } from '@/components/ui/card'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { messages } from '@/config/messages'
+import { RequireMunicipality } from '@/features/municipality-scope/RequireMunicipality'
 import type { AccountState } from '@/types/auth'
 import { useMunicipalAgents, useSetAgentActive } from './api/agents'
-import { useMunicipalities } from './api/municipalities'
+import { useMunicipalityScope } from '@/features/municipality-scope/context'
 import { AgentFormDialog } from './components/AgentFormDialog'
 import { AgentsTable } from './components/AgentsTable'
 import type { MunicipalAgent } from './types'
@@ -37,19 +31,23 @@ import type { MunicipalAgent } from './types'
  * El filtro por municipalidad vale para las dos pestañas —son dos cortes de la
  * misma lista, no dos listas—, igual que en la pantalla de validadores.
  */
-/** Valor del filtro cuando no hay municipalidad elegida. */
-const ALL_MUNICIPALITIES = 'all'
-
 export function AgentsPage() {
+  // El admin ve la municipalidad elegida en el header: hasta que esté resuelta
+  // no se pide nada, para no traer por un instante los datos de todas.
+  return (
+    <RequireMunicipality>
+      <AgentsPageContent />
+    </RequireMunicipality>
+  )
+}
+
+function AgentsPageContent() {
   const [tab, setTab] = useState<AccountState>('active')
-  const [municipalityFilter, setMunicipalityFilter] = useState(ALL_MUNICIPALITIES)
-  const scope =
-    municipalityFilter === ALL_MUNICIPALITIES
-      ? {}
-      : { municipalityId: Number(municipalityFilter) }
+  // Los agentes de la municipalidad elegida en el header.
+  const { municipalityId, current } = useMunicipalityScope()
+  const scope = municipalityId === undefined ? {} : { municipalityId }
   const active = useMunicipalAgents({ ...scope, state: 'active' })
   const archived = useMunicipalAgents({ ...scope, state: 'inactive' })
-  const municipalities = useMunicipalities()
   const setActive = useSetAgentActive()
   const [pendingDeactivation, setPendingDeactivation] = useState<MunicipalAgent | null>(
     null,
@@ -74,33 +72,9 @@ export function AgentsPage() {
       <PageHeader
         title={messages.agents.title}
         description={
-          municipalities.data?.length === 0
-            ? messages.agents.noMunicipalities
-            : messages.agents.description
+          current ? messages.agents.description : messages.agents.noMunicipalities
         }
-        actions={
-          <>
-            <Select value={municipalityFilter} onValueChange={setMunicipalityFilter}>
-              <SelectTrigger
-                className="w-56"
-                aria-label={messages.agents.filterByMunicipality}
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL_MUNICIPALITIES}>
-                  {messages.agents.allMunicipalities}
-                </SelectItem>
-                {municipalities.data?.map((municipality) => (
-                  <SelectItem key={municipality.id} value={String(municipality.id)}>
-                    {municipality.city} — {municipality.province}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <AgentFormDialog municipalities={municipalities.data ?? []} />
-          </>
-        }
+        actions={<>{current && <AgentFormDialog municipality={current} />}</>}
       />
 
       <Tabs
@@ -128,11 +102,7 @@ export function AgentsPage() {
                 error={active.error}
                 onRetry={() => void active.refetch()}
                 isEmpty={active.data?.length === 0}
-                emptyMessage={
-                  municipalityFilter === ALL_MUNICIPALITIES
-                    ? messages.agents.empty
-                    : messages.agents.emptyForMunicipality
-                }
+                emptyMessage={messages.agents.emptyForMunicipality}
               >
                 <AgentsTable
                   agents={active.data ?? []}
@@ -156,11 +126,7 @@ export function AgentsPage() {
                 error={archived.error}
                 onRetry={() => void archived.refetch()}
                 isEmpty={archived.data?.length === 0}
-                emptyMessage={
-                  municipalityFilter === ALL_MUNICIPALITIES
-                    ? messages.agents.emptyArchived
-                    : messages.agents.emptyArchivedForMunicipality
-                }
+                emptyMessage={messages.agents.emptyArchivedForMunicipality}
               >
                 <AgentsTable
                   agents={archived.data ?? []}

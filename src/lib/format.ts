@@ -16,10 +16,22 @@ const dateTimeFormatter = new Intl.DateTimeFormat(LOCALE, {
   minute: '2-digit',
 })
 
+const timeFormatter = new Intl.DateTimeFormat(LOCALE, {
+  hour: '2-digit',
+  minute: '2-digit',
+})
+
 export function formatDate(value: string | null | undefined): string {
   if (!value) return '—'
   const date = new Date(value)
   return Number.isNaN(date.getTime()) ? '—' : dateFormatter.format(date)
+}
+
+/** Solo la hora, «09:53 a. m.», para mostrarla debajo de la fecha. */
+export function formatTime(value: string | null | undefined): string {
+  if (!value) return ''
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? '' : timeFormatter.format(date)
 }
 
 export function formatDateTime(value: string | null | undefined): string {
@@ -53,6 +65,31 @@ export function shortAddress(value: string | null | undefined): string {
     .filter(Boolean)
   if (parts.length <= ADDRESS_PARTS) return parts.join(', ')
   return parts.slice(0, ADDRESS_PARTS).join(', ')
+}
+
+/** Un número de puerta: «527», «1145b», «12-14». */
+const HOUSE_NUMBER = /^\d+[a-z]?(-\d+)?$/i
+
+/**
+ * Solo calle y número —«Corrientes 527»—, para las filas de una tabla.
+ *
+ * El geocodificador arma la dirección al revés de como se lee —«527,
+ * Corrientes, Centro, Villa María, …»— y a veces con un lugar adelante
+ * —«Banco Patagonia, 1145, Santa Fe, …»—. Si hay un tramo que es un número de
+ * puerta, se lo pone detrás de la calle que lo sigue. Si no lo hay, queda el
+ * primer tramo, que es la calle o lo que haya escrito la persona.
+ */
+export function streetAddress(value: string | null | undefined): string {
+  if (!value) return ''
+  const parts = value
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean)
+  const number = parts.findIndex((part) => HOUSE_NUMBER.test(part))
+  if (number !== -1 && number + 1 < parts.length) {
+    return `${parts[number + 1]} ${parts[number]}`
+  }
+  return parts[0] ?? ''
 }
 
 /**
@@ -109,4 +146,40 @@ export function formatDateOnly(value: string): string {
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
   return `${day}/${month}/${date.getFullYear()}`
+}
+
+const HOUR_SECONDS = 3600
+const DAY_SECONDS = 24 * HOUR_SECONDS
+
+/**
+ * Un tiempo en la unidad que se lee mejor: horas por debajo del día, días por
+ * encima (US-050, escenario 11). Con un decimal y coma, como se escribe acá.
+ * Por debajo de una hora se muestra en minutos para que no diga «0 h».
+ */
+export function formatDuration(seconds: number): string {
+  const one = (value: number) =>
+    value.toLocaleString('es-AR', { maximumFractionDigits: 1 })
+  if (seconds < HOUR_SECONDS) return `${Math.max(1, Math.round(seconds / 60))} min`
+  if (seconds < DAY_SECONDS) return `${one(seconds / HOUR_SECONDS)} h`
+  // Desde diez días el decimal ya no informa nada: «350 días», no «349,8».
+  const days = seconds / DAY_SECONDS
+  const shown = days >= 10 ? String(Math.round(days)) : one(days)
+  return `${shown} ${shown === '1' ? 'día' : 'días'}`
+}
+
+/**
+ * Un tiempo promedio, siempre en horas (US-050). Decisión del usuario del
+ * 21/10: los promedios se comparan entre sí, y con todos en la misma unidad se
+ * ve de un vistazo cuál etapa tarda más. Con un decimal por debajo de diez
+ * horas, enteras por encima —«207 h», no «206,8 h»—, y en minutos por debajo de
+ * una hora para que no diga «0 hs».
+ */
+export function formatHours(seconds: number): string {
+  if (seconds < HOUR_SECONDS) return `${Math.max(1, Math.round(seconds / 60))} min`
+  const hours = seconds / HOUR_SECONDS
+  const shown =
+    hours >= 10
+      ? Math.round(hours).toLocaleString('es-AR')
+      : hours.toLocaleString('es-AR', { maximumFractionDigits: 1 })
+  return `${shown} hs`
 }

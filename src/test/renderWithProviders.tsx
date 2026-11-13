@@ -4,6 +4,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import { Toaster } from '@/components/ui/sonner'
 import { createQueryClient } from '@/lib/queryClient'
+import { MunicipalityScopeProvider } from '@/features/municipality-scope/MunicipalityScopeProvider'
 import { AuthProvider } from '@/providers/AuthProvider'
 
 /**
@@ -21,7 +22,9 @@ export function renderWithProviders(
     <MemoryRouter initialEntries={[route]}>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          {ui}
+          {/* Igual que AppShell: las pantallas leen de acá qué municipalidad
+              muestran. */}
+          <MunicipalityScopeProvider>{ui}</MunicipalityScopeProvider>
           {/* Igual que en AppProviders: sin él los toasts no se renderizan. */}
           <Toaster />
         </AuthProvider>

@@ -41,6 +41,7 @@ function row(overrides: Partial<PanelReportRow> = {}): PanelReportRow {
     // Solo viaja al filtrar por operario; en el perfil del validador va nulo.
     closure: null,
     needs_closure_review: false,
+    pending_complaint_count: 0,
     ...overrides,
   }
 }

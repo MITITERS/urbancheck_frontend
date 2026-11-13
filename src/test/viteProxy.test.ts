@@ -26,10 +26,21 @@ async function resolveProxy(): Promise<Record<string, string | ProxyOptions>> {
 }
 
 describe('proxy del dev server', () => {
-  it('proxea la API, allauth y los archivos subidos', async () => {
+  it('proxea la API, allauth, los archivos subidos y el enlace compartido', async () => {
     const proxy = await resolveProxy()
 
-    expect(Object.keys(proxy).sort()).toEqual(['/_allauth', '/api', '/media'])
+    expect(Object.keys(proxy).sort()).toEqual(['/_allauth', '/api', '/media', '^/r/'])
+  })
+
+  it('CP-030-P06 · el enlace compartido no se lleva las rutas del panel', () => {
+    // Vite trata una clave con `^` como expresión regular. Como prefijo, `/r`
+    // también capturaría `/reportes` y la mandaría al backend.
+    const shared = new RegExp('^/r/')
+
+    expect(shared.test('/r/da139cad-eb68-4d1a-bd2f-9ae4b21c7601')).toBe(true)
+    expect(shared.test('/reportes')).toBe(false)
+    expect(shared.test('/reportes/42')).toBe(false)
+    expect(shared.test('/reporte/da139cad')).toBe(false)
   })
 
   it('no reescribe el Host: es de donde salen las URLs de las fotos', async () => {

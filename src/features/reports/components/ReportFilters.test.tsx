@@ -1,7 +1,8 @@
-import { screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { messages } from '@/config/messages'
+import { toDateOnly } from '@/lib/format'
 import { renderWithProviders } from '@/test/renderWithProviders'
 import { ReportFilters } from './ReportFilters'
 import {
@@ -38,7 +39,19 @@ const EMPTY: Filters = {
   pageSize: 20,
 }
 
+/** Renderiza la barra y la abre, que arranca cerrada. */
 function renderFilters(filters: Partial<Filters> = {}, isFiltered = false) {
+  const result = renderClosed(filters, isFiltered)
+  fireEvent.click(toggleButton())
+  return result
+}
+
+/** El botón que abre la barra; con filtros aplicados su nombre suma «Activos». */
+function toggleButton() {
+  return screen.getByRole('button', { name: new RegExp(`^${labels.toggle}`) })
+}
+
+function renderClosed(filters: Partial<Filters> = {}, isFiltered = false) {
   const onChange = vi.fn()
   const onClear = vi.fn()
   renderWithProviders(
@@ -245,9 +258,9 @@ describe('ReportFilters, fechas y orden', () => {
         onClear={vi.fn()}
       />,
     )
-    await userEvent
-      .setup()
-      .click(screen.getByRole('combobox', { name: labels.ordering }))
+    const user = userEvent.setup()
+    await user.click(toggleButton())
+    await user.click(screen.getByRole('combobox', { name: labels.ordering }))
 
     expect(await screen.findAllByRole('option')).toHaveLength(2)
   })
@@ -289,5 +302,47 @@ describe('ReportFilters, cierres a revisar (US-015)', () => {
     await user.click(toggle)
 
     expect(onChange).toHaveBeenLastCalledWith({ closureReview: false })
+  })
+})
+
+describe('ReportFilters, rango de fechas', () => {
+  it.each(['created-from', 'created-to'])(
+    'el calendario de %s no ofrece días futuros',
+    async (id) => {
+      const today = toDateOnly(new Date())
+      const { user } = renderFilters({ createdFrom: today, createdTo: today })
+
+      await user.click(document.getElementById(id)!)
+
+      const days = document.querySelectorAll<HTMLElement>('td[data-day]')
+      expect(days.length).toBeGreaterThan(0)
+      for (const day of days) {
+        const future = day.dataset.day! > today
+        expect(day.hasAttribute('data-disabled'), day.dataset.day).toBe(future)
+      }
+    },
+  )
+})
+
+describe('ReportFilters, barra plegable', () => {
+  it('arranca cerrada y se abre con el botón', async () => {
+    const { user } = renderClosed()
+
+    const toggle = toggleButton()
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByRole('button', { name: labels.status })).toBeNull()
+
+    await user.click(toggle)
+
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('button', { name: labels.status })).toBeVisible()
+  })
+
+  it('cerrada avisa que hay filtros aplicados y deja limpiarlos', async () => {
+    const { onClear, user } = renderClosed({ zone: 'Corrientes' }, true)
+
+    expect(screen.getByText(labels.active)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: labels.clear }))
+    expect(onClear).toHaveBeenCalled()
   })
 })

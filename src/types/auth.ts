@@ -1,11 +1,13 @@
 /**
- * Roles that exist across the whole UrbanCheck platform. Only the two municipal
- * ones can use this panel; citizens and validators use the mobile app.
+ * Roles that exist across the whole UrbanCheck platform. Only the platform
+ * admin and the municipal agent use this panel; citizens, validators and
+ * operators use the mobile app.
  */
 export const ROLES = {
   PLATFORM_ADMIN: 'ADMIN_PLATAFORMA',
   MUNICIPAL_AGENT: 'AGENTE_MUNICIPAL',
   VALIDATOR: 'VALIDADOR',
+  OPERATOR: 'OPERARIO',
   CITIZEN: 'CIUDADANO',
 } as const
 

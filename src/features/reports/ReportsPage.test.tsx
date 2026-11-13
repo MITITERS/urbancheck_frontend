@@ -26,6 +26,7 @@ const ROW: PanelReportRow = {
   validation: null,
   closure: null,
   needs_closure_review: false,
+  pending_complaint_count: 0,
 }
 
 beforeEach(() => {

@@ -1,24 +1,17 @@
 import { useState } from 'react'
-import { Controller, useForm } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
-import { Field, FieldError, FieldLabel } from '@/components/ui/field'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { FormDialog } from '@/components/common/FormDialog'
 import { PasswordField } from '@/components/common/PasswordField'
 import { TextField } from '@/components/common/TextField'
 import { messages } from '@/config/messages'
+import { FixedMunicipalityField } from '@/features/municipality-scope/FixedMunicipalityField'
+import type { Municipality } from '@/types/auth'
 import { applyFieldErrors } from '@/lib/forms'
 import { useCreateValidator } from '../api/validators'
-import type { MunicipalityDetail } from '@/features/platform-admin/types'
 
 const MIN_PASSWORD_LENGTH = 8
 
@@ -49,25 +42,20 @@ const FIELD_MAP = {
  * uno lo decide `municipalities`: si llega la lista, hay selector.
  */
 export function ValidatorFormDialog({
-  municipalities,
+  municipality,
 }: {
-  /** Municipalidades entre las que elegir. Sin esto, no hay selector. */
-  municipalities?: MunicipalityDetail[]
+  /**
+   * La municipalidad del alta, fija: la que el admin eligió en el header. Sin
+   * esto —el agente— no se manda: el backend le asigna la suya.
+   */
+  municipality?: Municipality
 }) {
   const [open, setOpen] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const createValidator = useCreateValidator()
-  const choosesMunicipality = municipalities !== undefined
 
   const form = useForm<ValidatorForm>({
-    resolver: zodResolver(
-      choosesMunicipality
-        ? schema.refine((values) => values.municipalityId !== '', {
-            path: ['municipalityId'],
-            message: 'Elegí una municipalidad.',
-          })
-        : schema,
-    ),
+    resolver: zodResolver(schema),
     defaultValues: {
       name: '',
       email: '',
@@ -91,9 +79,7 @@ export function ValidatorFormDialog({
         name: values.name,
         email: values.email,
         temporaryPassword: values.temporaryPassword,
-        ...(choosesMunicipality
-          ? { municipalityId: Number(values.municipalityId) }
-          : {}),
+        ...(municipality ? { municipalityId: municipality.id } : {}),
       })
       toast.success(messages.validators.created)
       handleOpenChange(false)
@@ -106,11 +92,7 @@ export function ValidatorFormDialog({
     <FormDialog
       open={open}
       onOpenChange={handleOpenChange}
-      trigger={
-        <Button disabled={municipalities?.length === 0}>
-          {messages.validators.create}
-        </Button>
-      }
+      trigger={<Button>{messages.validators.create}</Button>}
       title={messages.validators.createTitle}
       error={formError}
       isSubmitting={form.formState.isSubmitting}
@@ -130,32 +112,10 @@ export function ValidatorFormDialog({
         label={messages.validators.temporaryPassword}
         description={messages.validators.temporaryPasswordHint}
       />
-      {choosesMunicipality && (
-        <Controller
-          control={form.control}
-          name="municipalityId"
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor={field.name}>
-                {messages.validators.municipality}
-              </FieldLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger id={field.name} aria-invalid={fieldState.invalid}>
-                  <SelectValue
-                    placeholder={messages.validators.municipalityPlaceholder}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {municipalities.map((municipality) => (
-                    <SelectItem key={municipality.id} value={String(municipality.id)}>
-                      {municipality.city} — {municipality.province}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
+      {municipality && (
+        <FixedMunicipalityField
+          label={messages.validators.municipality}
+          municipality={municipality}
         />
       )}
     </FormDialog>

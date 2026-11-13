@@ -1,24 +1,17 @@
 import { useState } from 'react'
-import { Controller, useForm } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
-import { Field, FieldError, FieldLabel } from '@/components/ui/field'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { FormDialog } from '@/components/common/FormDialog'
 import { PasswordField } from '@/components/common/PasswordField'
 import { TextField } from '@/components/common/TextField'
 import { messages } from '@/config/messages'
+import { FixedMunicipalityField } from '@/features/municipality-scope/FixedMunicipalityField'
+import type { Municipality } from '@/types/auth'
 import { applyFieldErrors } from '@/lib/forms'
 import { useCreateMunicipalAgent } from '../api/agents'
-import type { MunicipalityDetail } from '../types'
 
 const MIN_PASSWORD_LENGTH = 8
 
@@ -28,7 +21,7 @@ const schema = z.object({
   temporaryPassword: z
     .string()
     .min(MIN_PASSWORD_LENGTH, `Usá al menos ${MIN_PASSWORD_LENGTH} caracteres.`),
-  municipalityId: z.string().min(1, 'Elegí una municipalidad.'),
+  municipalityId: z.string(),
 })
 
 type AgentForm = z.infer<typeof schema>
@@ -40,9 +33,10 @@ const FIELD_MAP = {
 } as const
 
 export function AgentFormDialog({
-  municipalities,
+  municipality,
 }: {
-  municipalities: MunicipalityDetail[]
+  /** La municipalidad del alta, fija: la que el admin eligió en el header. */
+  municipality: Municipality
 }) {
   const [open, setOpen] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
@@ -73,7 +67,7 @@ export function AgentFormDialog({
         name: values.name,
         email: values.email,
         temporaryPassword: values.temporaryPassword,
-        municipalityId: Number(values.municipalityId),
+        municipalityId: municipality.id,
       })
       toast.success(messages.agents.created)
       handleOpenChange(false)
@@ -86,9 +80,7 @@ export function AgentFormDialog({
     <FormDialog
       open={open}
       onOpenChange={handleOpenChange}
-      trigger={
-        <Button disabled={municipalities.length === 0}>{messages.agents.create}</Button>
-      }
+      trigger={<Button>{messages.agents.create}</Button>}
       title={messages.agents.createTitle}
       error={formError}
       isSubmitting={form.formState.isSubmitting}
@@ -108,27 +100,9 @@ export function AgentFormDialog({
         label={messages.agents.temporaryPassword}
         description={messages.agents.temporaryPasswordHint}
       />
-      <Controller
-        control={form.control}
-        name="municipalityId"
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid}>
-            <FieldLabel htmlFor={field.name}>{messages.agents.municipality}</FieldLabel>
-            <Select value={field.value} onValueChange={field.onChange}>
-              <SelectTrigger id={field.name} aria-invalid={fieldState.invalid}>
-                <SelectValue placeholder={messages.agents.municipalityPlaceholder} />
-              </SelectTrigger>
-              <SelectContent>
-                {municipalities.map((municipality) => (
-                  <SelectItem key={municipality.id} value={String(municipality.id)}>
-                    {municipality.city} — {municipality.province}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )}
+      <FixedMunicipalityField
+        label={messages.agents.municipality}
+        municipality={municipality}
       />
     </FormDialog>
   )

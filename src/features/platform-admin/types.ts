@@ -1,5 +1,4 @@
 import type { Municipality } from '@/types/auth'
-import type { ReportCategory, ReportStatus } from '@/features/reports/types'
 
 export type { Municipality }
 
@@ -28,18 +27,6 @@ export interface MunicipalityPayload {
   latitude: number
   longitude: number
   boundary: BoundaryPoint[]
-}
-
-/** Minimal payload the coverage map needs for one marker. */
-export interface MunicipalityReportMarker {
-  id: number
-  /** Número dentro de la municipalidad: es como lo nombra el popup. */
-  number: number | null
-  category: ReportCategory
-  status: ReportStatus
-  latitude: string
-  longitude: string
-  address: string
 }
 
 export interface MunicipalAgent {

@@ -18,7 +18,11 @@ export const messages = {
     areas: 'Áreas operativas',
     municipalities: 'Municipalidades',
     agents: 'Agentes municipales',
-    privacy: 'Protección de datos',
+    moderation: 'Denuncias',
+    moderationAppeals: 'Apelaciones',
+    statistics: 'Estadísticas',
+    /** Lo que lee un lector de pantalla junto al contador del menú. */
+    pendingCount: (count: number) => `${count} pendientes`,
     logout: 'Cerrar sesión',
   },
   common: {
@@ -30,6 +34,9 @@ export const messages = {
     empty: 'Todavía no hay nada para mostrar.',
     yes: 'Sí',
     no: 'No',
+    // El vecino borró su cuenta (N-09): sus reportes gestionados se conservan
+    // sin autor.
+    deletedUser: 'Usuario eliminado',
   },
   municipalities: {
     title: 'Municipalidades',
@@ -100,12 +107,6 @@ export const messages = {
     deleteWithData: (reports: number, users: number) =>
       `Tiene ${reports} ${reports === 1 ? 'reporte' : 'reportes'} y ${users} ${users === 1 ? 'usuario' : 'usuarios'} asociados.`,
     deleteConfirm: 'Eliminar municipalidad',
-    backToList: 'Volver a municipalidades',
-    detailReports: 'Reportes del municipio',
-    viewList: 'Lista',
-    viewMap: 'Mapa',
-    noReports: 'Este municipio todavía no recibió reportes.',
-    noMarkers: 'Ninguno de los reportes tiene coordenadas para ubicar en el mapa.',
     coverageOf: (city: string) => `Cobertura de ${city}`,
   },
   reports: {
@@ -145,6 +146,8 @@ export const messages = {
       createdFrom: 'Desde',
       createdTo: 'Hasta',
       ordering: 'Ordenar por',
+      toggle: 'Filtros',
+      active: 'Activos',
       clear: 'Limpiar filtros',
       clearDate: 'Quitar la fecha',
       allStatuses: 'Todos los estados',
@@ -191,7 +194,7 @@ export const messages = {
     description:
       'Las dependencias de tu municipalidad que resuelven los reportes. A cada reporte validado se le asigna una, y sus operarios lo ven en la app.',
     adminDescription:
-      'Las dependencias que resuelven los reportes de cada municipio. Elegí en cuál se da de alta cada área.',
+      'Las dependencias que resuelven los reportes de la municipalidad elegida en el encabezado.',
     create: 'Registrar un área',
     createTitle: 'Nueva área operativa',
     editTitle: 'Editar área operativa',
@@ -317,7 +320,6 @@ export const messages = {
   },
   reportDetail: {
     backToList: 'Volver al listado',
-    backToMunicipality: 'Volver a la municipalidad',
     notFound: 'Ese reporte no existe o no pertenece a tu municipio.',
     description: 'Descripción',
     location: 'Ubicación',
@@ -334,6 +336,8 @@ export const messages = {
     history: 'Historial de cambios',
     historyEmpty: 'Sin movimientos registrados.',
     initialStatus: 'Alta del reporte',
+    // El admin ejecuta las acciones del panel con las reglas del agente (C-15).
+    actedAsPlatformAdmin: 'como administración de la plataforma',
     reason: 'Motivo',
     actions: 'Acciones',
     awaitingValidation:
@@ -413,13 +417,15 @@ export const messages = {
       confirmacion_automatica: 'Confirmación automática',
       apelacion_ciudadano: 'Objeción del vecino',
       archivado_inactividad: 'Archivado por inactividad',
+      moderacion_municipal: 'Descarte por moderación',
+      reversion_moderacion: 'Descarte revertido',
     },
     /** US-043: la foto se retiró, o el reporte está oculto mientras se revisa. */
     photoRemoved: 'Imagen retirada por protección de datos',
     withdrawn:
       'Retirado de la app: su foto mostraba un dato personal y se eliminó. Ningún vecino lo ve, salvo su autor.',
     underPrivacyReview:
-      'Oculto al público: hay una denuncia por un dato personal visible en la imagen. La resuelve el administrador de la plataforma.',
+      'Oculto al público: hay una denuncia por un dato personal visible en la imagen. Se resuelve desde Denuncias.',
     /** US-042: la imagen todavía no se difuminó, o no se pudo difuminar. */
     photoProcessing: 'Procesando la imagen para difuminar rostros y patentes',
     photoFailed: 'No pudimos procesar la imagen',
@@ -461,7 +467,7 @@ export const messages = {
     description:
       'Personal habilitado para verificar en terreno si un reporte corresponde a un problema real. Se dan de alta en tu municipalidad.',
     adminDescription:
-      'Personal habilitado para verificar en terreno si un reporte corresponde a un problema real. Elegí en qué municipalidad se da de alta cada uno.',
+      'Personal de la municipalidad elegida en el encabezado, habilitado para verificar en terreno si un reporte corresponde a un problema real.',
     noMunicipalities: 'Registrá una municipalidad antes de dar de alta validadores.',
     create: 'Dar de alta un validador',
     createTitle: 'Nuevo validador',
@@ -486,7 +492,7 @@ export const messages = {
     activate: 'Reactivar',
     deactivateTitle: '¿Desactivar a este validador?',
     deactivateDescription:
-      'Pierde la posibilidad de validar reportes, pero conserva su acceso a la aplicación como ciudadano común. Las validaciones que ya ejecutó se mantienen en el historial.',
+      'Pierde la posibilidad de validar reportes. La cuenta es de trabajo: dada de baja, no puede usarla como vecino. Las validaciones que ya ejecutó se mantienen en el historial.',
     deactivateConfirm: 'Desactivar validador',
     deactivated: 'El validador ya no puede validar. Lo movimos a Archivados.',
     activated: 'El validador vuelve a estar habilitado.',
@@ -501,21 +507,6 @@ export const messages = {
   },
   /** Solicitudes por dato personal visible (US-043). */
   privacy: {
-    title: 'Protección de datos',
-    description:
-      'Imágenes denunciadas por mostrar un rostro o una patente sin difuminar, de todas las municipalidades. El reporte está oculto al público hasta que decidas, y el plazo para hacerlo es de 24 horas desde la recepción.',
-    tabPending: 'Pendientes',
-    tabResolved: 'Resueltas',
-    emptyPending: 'No hay solicitudes esperando revisión.',
-    emptyResolved: 'Todavía no se resolvió ninguna solicitud.',
-    image: 'Imagen',
-    report: 'Reporte',
-    municipality: 'Municipalidad',
-    receivedAt: 'Recibida',
-    deadline: 'Plazo',
-    decision: 'Decisión',
-    resolvedAt: 'Resuelta',
-    resolvedBy: 'Resolvió',
     reportNumber: (number: number | string) => `Reporte #${number}`,
     reportPhoto: 'Foto del reporte',
     evidencePhoto: 'Foto del cierre del operario',
@@ -544,7 +535,235 @@ export const messages = {
     removedAppeal: 'La foto de la objeción se eliminó; el reporte sigue publicado.',
     dismissed: 'Solicitud desestimada: el reporte volvió a publicarse.',
     alreadyResolved: 'Otra persona ya resolvió esta solicitud.',
+  },
+  statistics: {
+    title: 'Estadísticas',
+    description:
+      'Qué problemáticas predominan en tu municipio y cómo se están gestionando.',
+    periodLabel: 'Período',
+    periods: {
+      '7d': 'Últimos 7 días',
+      '30d': 'Últimos 30 días',
+      '12m': 'Últimos 12 meses',
+      custom: 'Rango personalizado',
+    },
+    from: 'Desde',
+    to: 'Hasta',
+    apply: 'Aplicar',
+    /** Ningún número sin decir a qué ventana corresponde (escenario 5). */
+    activeWindow: (start: string, end: string) => `Del ${start} al ${end}`,
+    total: (count: number) =>
+      count === 1 ? '1 reporte creado' : `${count} reportes creados`,
+    rangeIncomplete: 'Elegí la fecha de inicio y la de fin.',
+    rangeInverted: 'La fecha de inicio no puede ser posterior a la de fin.',
+    rangeFuture: 'El rango no puede incluir fechas futuras.',
+    empty: 'No hay reportes creados en este período.',
+    byCategory: 'Por categoría',
+    byStatus: 'Por estado',
+    stages: 'Tiempo promedio por etapa',
+    stagesNote:
+      'La validación depende de los validadores y de los vecinos; la asignación y la resolución, del municipio. Los reportes abiertos no entran en los promedios.',
+    validation: 'Validación',
+    assignment: 'Asignación',
+    resolution: 'Resolución',
+    sample: (count: number) => (count === 1 ? '1 caso' : `${count} casos`),
+    noCases: 'Sin casos en el período',
+    open: 'Abiertos ahora',
+    oldest: (age: string) => `el más viejo, hace ${age}`,
+    appealed: 'Cierres apelados',
+    appealedDetail: (appealed: number, closures: number) =>
+      `${appealed} de ${closures} cierres`,
+    threshold: (threshold: number) => `Umbral ${threshold} %`,
+    appealedAlert: (threshold: number) => `Supera el umbral del ${threshold} %`,
+    exits: 'Salidas del circuito',
+    cancellations: 'Cancelados',
+    cancellationsFieldRejection: 'Rechazados en terreno',
+    cancellationsModeration: 'Descartados por moderación',
+    cancellationsMunicipal: 'Cancelados por el municipio',
+    archived: 'Archivados por inactividad',
+    reports: (count: number) => (count === 1 ? 'reporte' : 'reportes'),
+    percent: (percentage: number | null) =>
+      percentage === null ? '—' : `${percentage.toLocaleString('es-AR')} %`,
+    groupOpen: 'En curso',
+    groupResolved: 'Resueltos',
+    groupOut: 'Fuera del circuito',
+    export: 'Exportar PDF',
+    exporting: 'Generando PDF…',
+    exportError: 'No pudimos generar el PDF. Probá de nuevo.',
+    /** El PDF descargable: una hoja A4 con todo lo de la sección. */
+    pdf: {
+      documentTitle: (municipality: string | null) =>
+        municipality ? `Estadísticas · ${municipality}` : 'Estadísticas',
+      periodLabel: 'Período',
+      generated: (when: string) => `Generado el ${when}`,
+      created: 'Reportes creados',
+      inPeriod: 'en el período',
+      average: (sample: string) => `promedio · ${sample}`,
+      resolvedShare: 'de los reportes creados en el período ya está resuelto.',
+      topCategory: (share: string) =>
+        `es la categoría más reportada (${share} del total).`,
+      slowestStage: (time: string) => `es la etapa que más tarda: ${time} en promedio.`,
+      footer: 'UrbanCheck · Panel municipal',
+    },
+    /** La ayuda corta de cada tarjeta, detrás del ícono de información. */
+    help: {
+      label: (card: string) => `Qué significa «${card}»`,
+      stages:
+        'Cuánto tarda en promedio cada paso: validar el reporte, asignarlo a un área y resolverlo. Solo cuenta los reportes que terminaron ese paso en el período.',
+      open: 'Reportes que hoy siguen esperando, sin importar el período. Debajo, cuánto lleva esperando el más antiguo.',
+      appealed:
+        'De los cierres hechos en el período, cuántos objetó después el vecino. Si supera el umbral, se marca en rojo.',
+      exits:
+        'Reportes que salieron del circuito sin resolverse en el período: rechazados, descartados, cancelados o archivados por falta de actividad.',
+      byCategory:
+        'Cómo se reparten por tipo de problema los reportes creados en el período.',
+      byStatus: 'En qué estado están hoy los reportes creados en el período.',
+    },
+  },
+  municipalityScope: {
+    label: 'Municipalidad que estás viendo',
+    onlyOne: 'Es la única municipalidad dada de alta.',
+    none: 'Sin municipalidades',
+    required:
+      'Todavía no hay municipalidades dadas de alta. Creá una para ver sus datos.',
+    fixed: 'Se da de alta en la municipalidad elegida en el encabezado.',
+  },
+  publicReport: {
+    title: (number: number | string) => `Reporte #${number}`,
+    reportedOn: (date: string) => `Reportado el ${date}`,
+    likes: (count: number) =>
+      count === 1 ? '1 vecino lo apoya' : `${count} vecinos lo apoyan`,
+    description: 'Qué pasa',
+    location: 'Dónde',
+    timeline: 'Cómo avanzó',
+    officialResponses: 'Lo que dijo el municipio',
+    openInApp: 'Abrir en la app',
+    cta: 'Sumate desde la app de UrbanCheck: reportá problemas de tu barrio y seguí su resolución junto al municipio.',
+    unavailableTitle: 'Este reporte ya no está disponible',
+    unavailableBody:
+      'Puede haberse resuelto y archivado, o su autor lo eliminó. Gracias por interesarte en tu barrio.',
+    discardedBody: 'El municipio descartó este reporte. Este es el motivo:',
+    loadError: 'No pudimos cargar el reporte. Probá de nuevo en un rato.',
+  },
+  moderation: {
+    title: 'Denuncias',
+    description:
+      'Reportes de tu municipio que los vecinos denunciaron. Las de contenido se resuelven una sola vez por reporte, con todas sus denuncias; las de dato personal, por imagen y dentro del plazo que muestra cada una.',
+    adminDescription:
+      'Denuncias de la municipalidad elegida. Las de dato personal las resolvés vos; las de contenido, su agente municipal.',
+    filterLabel: 'Tipo de denuncia',
+    filter: {
+      todas: 'Todas',
+      contenido_inapropiado: 'Contenido inapropiado',
+      reporte_falso: 'Reporte falso',
+      dato_personal: 'Dato personal visible',
+    },
+    tabPending: 'Pendientes',
+    tabResolved: 'Resueltas',
+    emptyResolved: 'Todavía no se resolvió ninguna denuncia.',
+    columns: {
+      image: 'Imagen',
+      report: 'Reporte',
+      type: 'Tipo',
+      receivedAt: 'Recibida',
+      deadline: 'Plazo',
+      decision: 'Decisión',
+      resolvedAt: 'Resuelta',
+    },
+    /**
+     * Las de contenido no tienen plazo; las de dato personal, el que configura
+     * el backend (`PERSONAL_DATA_REVIEW_MINUTES`) y llega en cada fila.
+     */
+    noDeadline: 'Sin plazo',
+    reportPhoto: 'Foto del reporte',
+    resolvedBy: 'Resolvió',
+    decisionReason: 'Motivo',
+    revertedBadge: 'Descarte revertido',
+    empty: 'No hay denuncias esperando revisión.',
+    complaintCount: (count: number) =>
+      count === 1 ? '1 denuncia' : `${count} denuncias`,
+    oldest: (date: string) => `La más antigua: ${date}`,
+    reportedBy: 'Denunció',
+    anonymousReporter: 'Cuenta eliminada',
+    noComment: 'Sin comentario.',
     openReport: 'Ver reporte',
+    discard: 'Descartar el reporte',
+    dismiss: 'Desestimar',
+    discardTitle: '¿Descartar el reporte?',
+    discardDescription:
+      'El reporte pasa a Cancelado y deja de verse en el feed y en el mapa. Todas sus denuncias quedan resueltas y el autor recibe un aviso con el motivo.',
+    /** El contrapeso 1 de la historia: tiene que leerse antes de confirmar. */
+    publicWarning:
+      'El motivo que escribas es público: cualquier vecino lo ve en el reporte. El autor puede apelar tu decisión.',
+    discardConfirm: 'Descartar',
+    dismissTitle: '¿Desestimar las denuncias?',
+    dismissDescription:
+      'El reporte queda como está, publicado y en su estado. Las denuncias se cierran y los mismos vecinos no pueden volver a presentarlas.',
+    dismissConfirm: 'Desestimar',
+    reasonLabel: 'Motivo de tu decisión',
+    reasonPlaceholder: 'Contá en pocas palabras por qué',
+    reasonRequired: 'Indicá el motivo para poder continuar.',
+    discarded: 'Reporte descartado.',
+    dismissed: 'Denuncias desestimadas: el reporte sigue publicado.',
+    alreadyResolved: 'Otra persona ya resolvió estas denuncias.',
+    status: {
+      pendiente: 'Pendiente',
+      desestimada: 'Desestimada',
+      reporte_descartado: 'Reporte descartado',
+    },
+    /** Card del detalle del reporte. */
+    complaintsTitle: 'Denuncias',
+    noComplaints: 'Nadie denunció este reporte.',
+    resolveInInbox: 'Resolver en la bandeja de denuncias',
+    listFlag: (count: number) => (count === 1 ? '1 denuncia' : `${count} denuncias`),
+    listFlagHint: 'Tiene denuncias por contenido esperando tu decisión.',
+    /** El descarte vigente, en el detalle. */
+    discardedTitle: 'Descartado por moderación municipal',
+    discardedBy: (name: string, date: string) => `Lo descartó ${name} el ${date}.`,
+    publicReason: 'Motivo público',
+    appealPending: 'El autor apeló la decisión: está pendiente en Apelaciones.',
+    appealRejected: 'La apelación del autor fue rechazada.',
+    revert: 'Revertir el descarte',
+    revertTitle: '¿Revertir el descarte?',
+    revertDescription: (status: string) =>
+      `El reporte vuelve a «${status}», el estado que tenía antes del descarte, y se publica de nuevo. La reversión queda en el historial con tu usuario.`,
+    revertConfirm: 'Revertir',
+    reverted: 'Descarte revertido: el reporte volvió a publicarse.',
+    notDiscarded: 'Este reporte ya no tiene un descarte vigente.',
+  },
+  moderationAppeals: {
+    title: 'Apelaciones de moderación',
+    description:
+      'Vecinos que apelaron el descarte de su reporte por moderación. La decisión es definitiva: si no hacés lugar, el reporte queda cancelado y no admite otra apelación.',
+    tabPending: 'Pendientes',
+    tabResolved: 'Resueltas',
+    emptyPending: 'No hay apelaciones esperando revisión.',
+    emptyResolved: 'Todavía no se resolvió ninguna apelación.',
+    agentReason: 'Motivo del municipio',
+    authorReason: 'Lo que dice el vecino que reportó',
+    complaints: 'Denuncias que lo motivaron',
+    decidedBy: (name: string, date: string) => `Descartado por ${name} el ${date}`,
+    appealedAt: (date: string) => `Apelado el ${date}`,
+    accept: 'Hacer lugar',
+    reject: 'Rechazar',
+    acceptTitle: '¿Hacer lugar a la apelación?',
+    acceptDescription:
+      'El reporte vuelve al estado que tenía antes del descarte y se publica de nuevo. La reversión queda en el historial con tu usuario.',
+    rejectTitle: '¿Rechazar la apelación?',
+    rejectDescription:
+      'El reporte queda cancelado y el vecino no puede volver a apelar. Le llega un aviso.',
+    reasonLabel: 'Motivo de tu decisión',
+    accepted: 'Apelación aceptada: el reporte volvió a publicarse.',
+    rejected: 'Apelación rechazada.',
+    alreadyResolved: 'Esta apelación ya fue resuelta.',
+    status: {
+      pendiente: 'Pendiente',
+      aceptada: 'Aceptada',
+      rechazada: 'Rechazada',
+    },
+    resolution: (name: string, date: string) => `Resolvió ${name} el ${date}`,
+    resolutionLabel: 'Decisión sobre la apelación',
+    photoAlt: (number: number) => `Foto del reporte #${number}`,
   },
   agents: {
     title: 'Agentes municipales',
@@ -609,6 +828,37 @@ export const messages = {
     confirmPassword: 'Repetir contraseña nueva',
     submit: 'Guardar contraseña',
   },
+  // Las dos páginas públicas a las que llegan los enlaces de los correos (N-16).
+  accountLinks: {
+    resetTitle: 'Elegí una contraseña nueva',
+    resetDescription: 'Vas a usarla para ingresar a UrbanCheck.',
+    newPassword: 'Contraseña nueva',
+    confirmPassword: 'Repetir contraseña nueva',
+    minLength: (min: number) => `Usá al menos ${min} caracteres.`,
+    mismatch: 'Las contraseñas no coinciden.',
+    resetSubmit: 'Guardar contraseña',
+    resetDone: 'Tu contraseña fue cambiada. Ya podés ingresar con la nueva.',
+    confirmTitle: 'Confirmación de correo',
+    confirming: 'Confirmando tu correo…',
+    confirmDone: 'Listo: tu correo quedó confirmado.',
+    invalidLink:
+      'El enlace no es válido o ya venció. Pedí uno nuevo desde la aplicación.',
+    continueHint: 'Ya podés volver a la aplicación de UrbanCheck.',
+    goToLogin: 'Ir al ingreso',
+  },
+  // Cuando una pantalla falla al dibujarse o no llega por la red (N-19).
+  errorBoundary: {
+    title: 'Esta pantalla no se pudo mostrar',
+    description:
+      'Ocurrió un error inesperado. Lo que ya estaba guardado no se perdió: probá de nuevo.',
+    offlineTitle: 'Sin conexión',
+    offlineDescription:
+      'No pudimos cargar esta pantalla porque no hay conexión. Revisá la red y probá de nuevo.',
+    retry: 'Reintentar',
+  },
+  offline: {
+    banner: 'Sin conexión. Lo que hagas no se va a guardar hasta que vuelva la red.',
+  },
   errors: {
     unexpected: 'Ocurrió un error inesperado. Intentá de nuevo.',
     network: 'No pudimos comunicarnos con el servidor.',
@@ -622,7 +872,7 @@ export const messages = {
   forbidden: {
     title: 'Permisos insuficientes',
     description:
-      'Esta aplicación es de uso exclusivo del personal municipal. Si sos ciudadano o validador, usá la aplicación móvil de UrbanCheck.',
+      'Esta aplicación es de uso exclusivo del personal municipal. Si sos ciudadano, validador u operario, usá la aplicación móvil de UrbanCheck.',
     // Para quien sí opera el panel pero entró a una sección de otro rol.
     sectionTitle: 'Esta sección no es de tu rol',
     sectionDescription:

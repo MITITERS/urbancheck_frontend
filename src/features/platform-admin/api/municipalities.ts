@@ -4,11 +4,7 @@ import { endpoints } from '@/api/endpoints'
 import { areaKeys } from '@/features/areas/api/areas'
 import { municipalityKeys, userKeys } from '@/lib/queryKeys'
 import type { Paginated } from '@/types/api'
-import type {
-  MunicipalityDetail,
-  MunicipalityPayload,
-  MunicipalityReportMarker,
-} from '../types'
+import type { MunicipalityDetail, MunicipalityPayload } from '../types'
 
 /** UI payload -> API body. The API speaks snake_case. */
 function toApiBody(payload: Partial<MunicipalityPayload>) {
@@ -38,18 +34,6 @@ export function useMunicipalities({ enabled = true }: { enabled?: boolean } = {}
     queryKey: municipalityKeys.list(),
     queryFn: fetchMunicipalities,
     enabled,
-  })
-}
-
-export function useMunicipality(id: number) {
-  return useQuery({
-    queryKey: municipalityKeys.detail(id),
-    queryFn: async () => {
-      const { data } = await apiClient.get<MunicipalityDetail>(
-        endpoints.municipalities.detail(id),
-      )
-      return data
-    },
   })
 }
 
@@ -108,18 +92,6 @@ export function useDeleteMunicipality() {
       // Y a sus áreas operativas, por lo mismo: el desplegable de asignación
       // de US-028 las seguiría ofreciendo hasta que venciera la caché.
       void queryClient.invalidateQueries({ queryKey: areaKeys.all })
-    },
-  })
-}
-
-export function useMunicipalityReportMarkers(id: number) {
-  return useQuery({
-    queryKey: [...municipalityKeys.detail(id), 'markers'],
-    queryFn: async () => {
-      const { data } = await apiClient.get<{ results: MunicipalityReportMarker[] }>(
-        endpoints.municipalities.reportMarkers(id),
-      )
-      return data.results
     },
   })
 }

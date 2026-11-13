@@ -1,3 +1,4 @@
+import { useLocation } from 'react-router-dom'
 import { Building2, ChevronDown, LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -10,10 +11,20 @@ import {
 import { BrandMark, BrandWordmark } from '@/components/common/Brand'
 import { PersonAvatar } from '@/components/common/PersonAvatar'
 import { messages } from '@/config/messages'
-import type { AuthUser } from '@/types/auth'
+import { MunicipalitySelector } from '@/features/municipality-scope/MunicipalitySelector'
+import { ROLES, type AuthUser } from '@/types/auth'
+
+function isMunicipalitiesSection(pathname: string) {
+  return pathname === '/municipalidades' || pathname.startsWith('/municipalidades/')
+}
 
 export function Topbar({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
   const city = user.municipality?.city
+  const { pathname } = useLocation()
+  // En Municipalidades se administran todas a la vez: elegir una no aplica, y
+  // el selector solo confundiría sobre qué se está viendo.
+  const showsSelector =
+    user.role === ROLES.PLATFORM_ADMIN && !isMunicipalitiesSection(pathname)
 
   return (
     <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between gap-4 border-b bg-background/85 px-4 backdrop-blur-md md:px-6">
@@ -40,9 +51,14 @@ export function Topbar({ user, onLogout }: { user: AuthUser; onLogout: () => voi
             </div>
           </div>
         ) : (
-          <span className="hidden text-sm font-medium text-muted-foreground md:inline">
-            {messages.app.subtitle}
-          </span>
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="hidden text-sm font-medium text-muted-foreground md:inline">
+              {messages.app.subtitle}
+            </span>
+            {/* El admin elige acá qué municipalidad está viendo, y lo ven todas
+                las pantallas (ver `MunicipalityScope`). */}
+            {showsSelector && <MunicipalitySelector />}
+          </div>
         )}
       </div>
 

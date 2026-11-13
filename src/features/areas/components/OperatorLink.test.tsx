@@ -37,6 +37,7 @@ function row(overrides: Partial<PanelReportRow> = {}): PanelReportRow {
     validation: null,
     closure: { closed_at: '2026-09-05T10:00:00Z' },
     needs_closure_review: false,
+    pending_complaint_count: 0,
     ...overrides,
   }
 }

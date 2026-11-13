@@ -36,16 +36,39 @@ function row(overrides: Partial<PanelReportRow> = {}): PanelReportRow {
     validation: null,
     closure: null,
     needs_closure_review: false,
+    pending_complaint_count: 0,
     ...overrides,
   }
 }
 
-/** La fila de la tabla que corresponde a ese reporte. */
+/**
+ * La fila de la tabla que corresponde a ese reporte.
+ *
+ * El área y la respuesta oficial se dibujan dos veces —en su columna y, para
+ * pantallas medianas, junto a la categoría y al estado— y el CSS decide cuál se
+ * ve. jsdom no aplica CSS, así que esas aserciones usan `getAllByText`.
+ */
 function rowFor(number: number): HTMLElement {
   return screen.getByRole('link', { name: `#${number}` }).closest('tr')!
 }
 
 describe('ReportsTable', () => {
+  it('CP-049-P13 (US-049 E12) · señala los reportes con denuncias por contenido pendientes', () => {
+    renderWithProviders(
+      <ReportsTable
+        reports={[
+          row({ id: 1, number: 1, pending_complaint_count: 2 }),
+          row({ id: 2, number: 2 }),
+        ]}
+      />,
+    )
+
+    expect(
+      within(rowFor(1)).getByText(messages.moderation.listFlag(2)),
+    ).toBeInTheDocument()
+    expect(within(rowFor(2)).queryByText(/denuncia/)).toBeNull()
+  })
+
   it('CP-015-P06 (US-015 E3) · señala el cierre que la comparación automática marcó como dudoso', () => {
     renderWithProviders(
       <ReportsTable
@@ -61,6 +84,7 @@ describe('ReportsTable', () => {
             number: 8,
             status: 'resuelto_pendiente_confirmacion',
             needs_closure_review: false,
+            pending_complaint_count: 0,
           }),
         ]}
       />,
@@ -77,7 +101,9 @@ describe('ReportsTable', () => {
       <ReportsTable reports={[row({ has_official_response: false })]} />,
     )
 
-    expect(within(rowFor(7)).getByText(messages.reports.unanswered)).toBeInTheDocument()
+    expect(
+      within(rowFor(7)).getAllByText(messages.reports.unanswered)[0],
+    ).toBeInTheDocument()
     expect(within(rowFor(7)).queryByText(messages.reports.answered)).toBeNull()
   })
 
@@ -86,7 +112,9 @@ describe('ReportsTable', () => {
       <ReportsTable reports={[row({ has_official_response: true })]} />,
     )
 
-    expect(within(rowFor(7)).getByText(messages.reports.answered)).toBeInTheDocument()
+    expect(
+      within(rowFor(7)).getAllByText(messages.reports.answered)[0],
+    ).toBeInTheDocument()
     expect(within(rowFor(7)).queryByText(messages.reports.unanswered)).toBeNull()
   })
 
@@ -100,15 +128,34 @@ describe('ReportsTable', () => {
       />,
     )
 
-    expect(within(rowFor(7)).getByText(messages.reports.unanswered)).toBeInTheDocument()
-    expect(within(rowFor(8)).getByText(messages.reports.answered)).toBeInTheDocument()
+    expect(
+      within(rowFor(7)).getAllByText(messages.reports.unanswered)[0],
+    ).toBeInTheDocument()
+    expect(
+      within(rowFor(8)).getAllByText(messages.reports.answered)[0],
+    ).toBeInTheDocument()
   })
 
   it('muestra el área responsable en el listado, no solo en el detalle', () => {
     // US-028, escenario 11: qué dependencia se hizo cargo se ve de un vistazo.
     renderWithProviders(<ReportsTable reports={[row()]} />)
 
-    expect(within(rowFor(7)).getByText(OBRAS.name)).toBeInTheDocument()
+    expect(within(rowFor(7)).getAllByText(OBRAS.name)[0]).toBeInTheDocument()
+  })
+
+  it('la ubicación muestra solo calle y número', () => {
+    renderWithProviders(
+      <ReportsTable
+        reports={[
+          row({
+            address:
+              '527, Corrientes, Centro, Villa María, Municipio de Villa María, Córdoba, 5900, Argentina',
+          }),
+        ]}
+      />,
+    )
+
+    expect(within(rowFor(7)).getByText('Corrientes 527')).toBeInTheDocument()
   })
 
   it('un reporte todavía sin área no deja la celda en blanco', () => {
@@ -127,7 +174,7 @@ describe('ReportsTable', () => {
       />,
     )
 
-    expect(within(rowFor(7)).getByText(OBRAS.name)).toBeInTheDocument()
+    expect(within(rowFor(7)).getAllByText(OBRAS.name)[0]).toBeInTheDocument()
   })
 
   it('la columna de respuesta oficial está declarada en el encabezado', () => {

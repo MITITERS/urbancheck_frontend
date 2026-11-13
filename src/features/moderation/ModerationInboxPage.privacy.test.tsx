@@ -5,8 +5,16 @@ import { apiClient } from '@/api/client'
 import { endpoints } from '@/api/endpoints'
 import { messages } from '@/config/messages'
 import { renderWithProviders } from '@/test/renderWithProviders'
-import { PrivacyRequestsPage } from './PrivacyRequestsPage'
-import type { PrivacyRequest } from './types'
+import { ROLES, type Role } from '@/types/auth'
+import type { PrivacyRequest } from '@/features/privacy/types'
+import { ModerationInboxPage } from './ModerationInboxPage'
+
+const { mockedRole } = vi.hoisted(() => ({
+  mockedRole: { current: null as Role | null },
+}))
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: () => ({ role: mockedRole.current, user: null }),
+}))
 
 /** El config de la instancia compartida, sin importar axios (regla del repo). */
 type RequestConfig = Parameters<typeof apiClient.get>[1]
@@ -71,26 +79,40 @@ function stubApi({
 }: { pending?: PrivacyRequest[]; resolved?: PrivacyRequest[] } = {}) {
   return vi
     .spyOn(apiClient, 'get')
-    .mockImplementation(async (_url: string, config?: RequestConfig) => {
+    .mockImplementation(async (url: string, config?: RequestConfig) => {
+      // La lista del selector de municipalidad del header (solo la pide el admin).
+      if (url === endpoints.municipalities.list) {
+        const villaMaria = { id: 3, city: 'Villa María', province: 'Córdoba' }
+        return { data: { count: 1, results: [villaMaria] } } as never
+      }
       const state = (config?.params as { state?: string } | undefined)?.state
       const results = state === 'resolved' ? resolved : pending
       return { data: { count: results.length, results } } as never
     })
 }
 
+/** Denuncias filtrada por dato personal, como llega el enlace viejo. */
+function renderSection() {
+  return renderWithProviders(<ModerationInboxPage />, {
+    route: '/denuncias?tipo=dato_personal',
+  })
+}
+
 beforeEach(() => {
+  // La bandeja la resuelve el admin; los casos del agente lo dicen.
+  mockedRole.current = ROLES.PLATFORM_ADMIN
   stubApi()
 })
 
-describe('PrivacyRequestsPage', () => {
-  it('CP-043-P06 (US-043 E4) · lista las pendientes con la imagen, el reporte y su municipio', async () => {
-    renderWithProviders(<PrivacyRequestsPage />)
+describe('Denuncias por dato personal (US-043)', () => {
+  it('CP-043-P06 (US-043 E4) · lista las pendientes con la imagen, el reporte y su dirección', async () => {
+    renderSection()
 
     const row = await screen.findByRole('row', { name: /Reporte #7/ })
     expect(
       within(row).getByRole('img', { name: messages.privacy.reportPhoto }),
     ).toHaveAttribute('src', 'https://example.test/face.jpg')
-    expect(within(row).getByText(/Villa María/)).toBeInTheDocument()
+    expect(within(row).getByText('Av. Siempre Viva 742')).toBeInTheDocument()
     expect(within(row).getByText(/^Quedan 21 h/)).toBeInTheDocument()
   })
 
@@ -107,7 +129,7 @@ describe('PrivacyRequestsPage', () => {
         }),
       ],
     })
-    renderWithProviders(<PrivacyRequestsPage />)
+    renderSection()
 
     const row = await screen.findByRole('row', { name: /Reporte #7/ })
     expect(
@@ -116,7 +138,7 @@ describe('PrivacyRequestsPage', () => {
   })
 
   it('CP-043-P08 (US-043 E4 y E7) · respeta el orden del servidor y señala la que está fuera de plazo', async () => {
-    renderWithProviders(<PrivacyRequestsPage />)
+    renderSection()
 
     const rows = await screen.findAllByRole('row', { name: /Reporte #/ })
     expect(rows[0]).toHaveTextContent('Reporte #8')
@@ -130,7 +152,7 @@ describe('PrivacyRequestsPage', () => {
       data: { ...request(), status: 'imagen_eliminada' },
     } as never)
     const user = userEvent.setup()
-    renderWithProviders(<PrivacyRequestsPage />)
+    renderSection()
 
     const row = await screen.findByRole('row', { name: /Reporte #7/ })
     await user.click(
@@ -154,7 +176,7 @@ describe('PrivacyRequestsPage', () => {
       .spyOn(apiClient, 'post')
       .mockResolvedValue({ data: { ...request(), status: 'desestimada' } } as never)
     const user = userEvent.setup()
-    renderWithProviders(<PrivacyRequestsPage />)
+    renderSection()
 
     const row = await screen.findByRole('row', { name: /Reporte #7/ })
     await user.click(
@@ -170,7 +192,7 @@ describe('PrivacyRequestsPage', () => {
   it('CP-043-P11 (US-043 E5) · cancelar la confirmación no resuelve nada', async () => {
     const post = vi.spyOn(apiClient, 'post')
     const user = userEvent.setup()
-    renderWithProviders(<PrivacyRequestsPage />)
+    renderSection()
 
     const row = await screen.findByRole('row', { name: /Reporte #7/ })
     await user.click(
@@ -185,10 +207,10 @@ describe('PrivacyRequestsPage', () => {
 
   it('CP-043-P12 (US-043 E8) · el registro muestra la decisión, quién y si fue en plazo', async () => {
     const user = userEvent.setup()
-    renderWithProviders(<PrivacyRequestsPage />)
+    renderSection()
 
     await user.click(
-      await screen.findByRole('tab', { name: messages.privacy.tabResolved }),
+      await screen.findByRole('tab', { name: messages.moderation.tabResolved }),
     )
 
     const row = await screen.findByRole('row', { name: /Reporte #7/ })
@@ -205,8 +227,44 @@ describe('PrivacyRequestsPage', () => {
 
   it('CP-043-P13 (US-043 E4) · sin pendientes lo dice en vez de dibujar una tabla vacía', async () => {
     stubApi({ pending: [] })
-    renderWithProviders(<PrivacyRequestsPage />)
+    renderSection()
 
-    expect(await screen.findByText(messages.privacy.emptyPending)).toBeVisible()
+    expect(await screen.findByText(messages.moderation.empty)).toBeVisible()
+  })
+})
+
+describe('Denuncias por dato personal, como agente municipal (pedido del 21/10)', () => {
+  beforeEach(() => {
+    mockedRole.current = ROLES.MUNICIPAL_AGENT
+  })
+
+  it('CP-043-P16 · resuelve las solicitudes de su municipio, como el admin', async () => {
+    const post = vi
+      .spyOn(apiClient, 'post')
+      .mockResolvedValue({ data: { ...request(), status: 'desestimada' } } as never)
+    const user = userEvent.setup()
+    renderSection()
+
+    const row = await screen.findByRole('row', { name: /Reporte #7/ })
+    expect(
+      within(row).getByRole('button', { name: messages.privacy.removeImage }),
+    ).toBeInTheDocument()
+    await user.click(
+      within(row).getByRole('button', { name: messages.privacy.dismiss }),
+    )
+    await user.click(
+      await screen.findByRole('button', { name: messages.privacy.dismissConfirm }),
+    )
+
+    expect(post).toHaveBeenCalledWith(endpoints.privacyRequests.dismiss(1))
+  })
+
+  it('CP-043-P17 · ve la imagen denunciada, igual que el admin', async () => {
+    renderSection()
+
+    const row = await screen.findByRole('row', { name: /Reporte #7/ })
+    expect(
+      within(row).getByRole('img', { name: messages.privacy.reportPhoto }),
+    ).toHaveAttribute('src', 'https://example.test/face.jpg')
   })
 })
