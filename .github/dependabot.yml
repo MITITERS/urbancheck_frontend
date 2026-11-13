@@ -22,6 +22,11 @@ updates:
     directory: '/'
     schedule:
       interval: 'weekly'
+    # Node se fija en .nvmrc, engines y Dockerfile (src/test/nodeVersion.test.ts
+    # exige que coincidan). Los majors se suben a mano, y solo a versiones LTS.
+    ignore:
+      - dependency-name: 'node'
+        update-types: ['version-update:semver-major']
 
   - package-ecosystem: 'github-actions'
     target-branch: 'develop'
