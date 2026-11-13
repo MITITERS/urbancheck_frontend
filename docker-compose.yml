@@ -1,0 +1,37 @@
+# Development environment for the municipal panel.
+#
+# The backend lives in its own repository and its own Compose project. Start it
+# first (`docker compose -f docker-compose.local.yml up` in urbancheck_backend):
+# that creates the network this service joins, so the dev server can proxy the
+# API to the `django` service by name.
+#
+# Override the network name with BACKEND_NETWORK if your backend project is
+# named differently (`docker network ls` shows it).
+
+services:
+  frontend:
+    build:
+      context: .
+      target: dev
+    image: urbancheck_local_frontend
+    container_name: urbancheck_local_frontend
+    command: npm run dev -- --host 0.0.0.0 --port 5173
+    volumes:
+      # Source is mounted for hot reload; node_modules stays the one baked into
+      # the image so host and container platforms do not clash.
+      - .:/app:z
+      - /app/node_modules
+    environment:
+      # Same-origin requests, proxied by the dev server to the backend service.
+      VITE_API_URL: ''
+      VITE_API_PROXY_TARGET: ${VITE_API_PROXY_TARGET:-http://django:8000}
+      VITE_USE_POLLING: ${VITE_USE_POLLING:-true}
+    ports:
+      - '5173:5173'
+    networks:
+      - backend
+
+networks:
+  backend:
+    name: ${BACKEND_NETWORK:-urbancheck_backend_default}
+    external: true

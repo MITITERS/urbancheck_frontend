@@ -1,0 +1,34 @@
+# Dependabot: actualizaciones semanales de dependencias (Sprint 5, punto 5.4).
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+# Todos los PR van contra `develop` (C-16): `main` recibe solo releases, y un
+# PR de dependencias contra `main` se saltea `develop` y su CI.
+
+version: 2
+updates:
+  - package-ecosystem: 'npm'
+    target-branch: 'develop'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    groups:
+      npm-minor-and-patch:
+        update-types:
+          - 'minor'
+          - 'patch'
+
+  - package-ecosystem: 'docker'
+    target-branch: 'develop'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+
+  - package-ecosystem: 'github-actions'
+    target-branch: 'develop'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    groups:
+      github-actions:
+        patterns:
+          - '*'

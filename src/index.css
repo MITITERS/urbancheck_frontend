@@ -1,111 +1,474 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+@import '@fontsource-variable/geist';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: 'Geist Variable', sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+
+  /*
+   * Colores de la marca, tomados del logo de la app móvil: el anillo del pin va
+   * del verde al azul y la ciudad es azul petróleo. Son los tres colores con
+   * los que el vecino ya conoce a UrbanCheck, así que el panel usa esos.
+   */
+  --color-brand-navy: var(--brand-navy);
+  --color-brand-blue: var(--brand-blue);
+  --color-brand-teal: var(--brand-teal);
+  --color-brand-emerald: var(--brand-emerald);
+  --color-brand-emerald-ink: var(--brand-emerald-ink);
+
+  /*
+   * Ciclo de vida del reporte. Estaban declaradas como variables sueltas, así
+   * que `bg-status-resolved` no generaba ninguna regla y todos los badges se
+   * veían grises. Mapearlas acá es lo que las convierte en utilidades.
+   */
+  --color-status-pending: var(--status-pending);
+  --color-status-in-progress: var(--status-in-progress);
+  --color-status-resolved: var(--status-resolved);
+  --color-status-rejected: var(--status-rejected);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  /*
+   * Elevación teñida de azul en vez de negro: una sombra gris sobre un fondo
+   * frío se ve sucia. Son suaves a propósito —esto es un panel de trabajo, no
+   * una landing— y sirven para separar plano, no para decorar.
+   */
+  --shadow-xs: 0 1px 2px 0 oklch(0.28 0.05 250 / 0.05);
+  --shadow-sm:
+    0 1px 2px 0 oklch(0.28 0.05 250 / 0.04), 0 1px 3px 0 oklch(0.28 0.05 250 / 0.06);
+  --shadow-card:
+    0 1px 2px 0 oklch(0.28 0.05 250 / 0.04), 0 4px 16px -4px oklch(0.28 0.05 250 / 0.08);
+  --shadow-popover:
+    0 4px 12px -2px oklch(0.28 0.05 250 / 0.1),
+    0 12px 32px -8px oklch(0.28 0.05 250 / 0.14);
+  --shadow-hero:
+    0 2px 4px -1px oklch(0.28 0.05 250 / 0.06),
+    0 24px 48px -12px oklch(0.28 0.05 250 / 0.18);
+}
+
+/*
+ * UrbanCheck design tokens.
+ *
+ * The whole palette lives here as shadcn CSS variables: components use the
+ * semantic classes (`bg-primary`, `text-muted-foreground`, `bg-status-resolved`)
+ * and never hardcode a color value.
+ *
+ * Los neutros no son grises puros: llevan una pizca del azul de la marca
+ * (hue 250). Un panel lleno de tablas y bordes en gris neutro se ve apagado al
+ * lado de un logo tan saturado; con el tinte, todo pertenece a la misma
+ * familia sin que ningún borde grite.
+ */
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  /* Marca, medida sobre el logo del móvil. */
+  --brand-navy: oklch(0.304 0.071 246.5);
+  --brand-blue: oklch(0.546 0.168 253.1);
+  --brand-teal: oklch(0.665 0.112 199.4);
+  --brand-emerald: oklch(0.747 0.156 165.5);
+  /* El verde del logo es demasiado claro para texto sobre blanco. */
+  --brand-emerald-ink: oklch(0.6 0.145 164);
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  --background: oklch(0.982 0.005 250);
+  --foreground: oklch(0.26 0.045 250);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.26 0.045 250);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.26 0.045 250);
+  --primary: oklch(0.546 0.168 253.1);
+  --primary-foreground: oklch(0.99 0.005 250);
+  --secondary: oklch(0.958 0.014 250);
+  --secondary-foreground: oklch(0.37 0.09 252);
+  --muted: oklch(0.966 0.008 250);
+  --muted-foreground: oklch(0.53 0.028 250);
+  --accent: oklch(0.948 0.028 250);
+  --accent-foreground: oklch(0.42 0.12 252);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0.012 250);
+  --input: oklch(0.922 0.012 250);
+  --ring: oklch(0.546 0.168 253.1);
+  --chart-1: oklch(0.546 0.168 253.1);
+  --chart-2: oklch(0.665 0.112 199.4);
+  --chart-3: oklch(0.747 0.156 165.5);
+  --chart-4: oklch(0.432 0.058 238.6);
+  --chart-5: oklch(0.786 0.032 225.2);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.988 0.006 250);
+  --sidebar-foreground: oklch(0.26 0.045 250);
+  --sidebar-primary: oklch(0.546 0.168 253.1);
+  --sidebar-primary-foreground: oklch(0.99 0.005 250);
+  --sidebar-accent: oklch(0.945 0.03 250);
+  --sidebar-accent-foreground: oklch(0.38 0.12 252);
+  --sidebar-border: oklch(0.922 0.012 250);
+  --sidebar-ring: oklch(0.546 0.168 253.1);
+  /* UrbanCheck report lifecycle */
+  --status-pending: oklch(0.66 0.14 68);
+  --status-in-progress: oklch(0.546 0.168 253.1);
+  --status-resolved: oklch(0.6 0.13 163);
+  --status-rejected: oklch(0.577 0.245 27.325);
+}
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+.dark {
+  --brand-navy: oklch(0.42 0.075 246.5);
+  --brand-blue: oklch(0.68 0.145 253.1);
+  --brand-teal: oklch(0.72 0.105 199.4);
+  --brand-emerald: oklch(0.78 0.145 165.5);
+  --brand-emerald-ink: oklch(0.78 0.145 164);
 
-  @media (max-width: 1024px) {
-    font-size: 16px;
+  --background: oklch(0.19 0.022 250);
+  --foreground: oklch(0.97 0.006 250);
+  --card: oklch(0.235 0.024 250);
+  --card-foreground: oklch(0.97 0.006 250);
+  --popover: oklch(0.245 0.024 250);
+  --popover-foreground: oklch(0.97 0.006 250);
+  --primary: oklch(0.68 0.145 253.1);
+  --primary-foreground: oklch(0.17 0.03 250);
+  --secondary: oklch(0.29 0.028 250);
+  --secondary-foreground: oklch(0.97 0.006 250);
+  --muted: oklch(0.29 0.026 250);
+  --muted-foreground: oklch(0.72 0.022 250);
+  --accent: oklch(0.33 0.05 250);
+  --accent-foreground: oklch(0.97 0.006 250);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 11%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.68 0.145 253.1);
+  --chart-1: oklch(0.68 0.145 253.1);
+  --chart-2: oklch(0.72 0.105 199.4);
+  --chart-3: oklch(0.78 0.145 165.5);
+  --chart-4: oklch(0.55 0.06 238.6);
+  --chart-5: oklch(0.8 0.03 225.2);
+  --sidebar: oklch(0.215 0.024 250);
+  --sidebar-foreground: oklch(0.97 0.006 250);
+  --sidebar-primary: oklch(0.68 0.145 253.1);
+  --sidebar-primary-foreground: oklch(0.17 0.03 250);
+  --sidebar-accent: oklch(0.33 0.05 250);
+  --sidebar-accent-foreground: oklch(0.97 0.006 250);
+  --sidebar-border: oklch(1 0 0 / 11%);
+  --sidebar-ring: oklch(0.68 0.145 253.1);
+  /* UrbanCheck report lifecycle */
+  --status-pending: oklch(0.79 0.14 72);
+  --status-in-progress: oklch(0.7 0.14 253.1);
+  --status-resolved: oklch(0.74 0.13 163);
+  --status-rejected: oklch(0.704 0.191 22.216);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  html {
+    @apply font-sans;
+  }
+  /* Los títulos aprietan un poco el tracking: a 18-30px el default se abre. */
+  h1,
+  h2 {
+    letter-spacing: -0.015em;
+  }
+  ::selection {
+    background-color: color-mix(in oklch, var(--primary) 22%, transparent);
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+/*
+ * Capa de tema sobre los componentes de shadcn.
+ *
+ * `components/ui/` lo genera el CLI y no se edita a mano, así que el ajuste
+ * fino se hace acá, contra los `data-slot` que esos componentes ya emiten. Es
+ * la única forma de subir el nivel visual de toda la app sin bloquear un
+ * `shadcn add` futuro.
+ *
+ * Va **fuera de toda capa** a propósito. Los componentes traen sus medidas como
+ * clases de Tailwind —`p-2`, `px-2`, `[--card-spacing:…]`—, que viven en la capa
+ * `utilities`, y en la cascada una capa siempre le gana a la anterior sin
+ * importar la especificidad. Metido en `@layer components`, todo esto se
+ * escribía y no pintaba nada. Sin capa, gana.
+ *
+ * La contracara: lo que se declare acá ya no se puede pisar con una clase en el
+ * call site. Por eso solo entran medidas y colores de base, y la elevación de
+ * las tarjetas queda en `@layer components`, donde una pantalla todavía puede
+ * pedir otra sombra.
+ */
+
+/* Tarjetas: un poco más de aire adentro. */
+[data-slot='card'] {
+  --card-spacing: --spacing(5);
+}
+[data-slot='card'][data-size='sm'] {
+  --card-spacing: --spacing(4);
+}
+
+/*
+ * Tablas: encabezado en versalitas sobre una banda tenue y filas más altas.
+ * Una tabla densa con el encabezado del mismo peso que los datos obliga a leer
+ * dos veces para saber qué columna es cuál.
+ */
+[data-slot='table'] {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+[data-slot='table-head'] {
+  height: --spacing(10);
+  padding-inline: --spacing(3);
+  background-color: color-mix(in oklch, var(--muted) 65%, transparent);
+  color: var(--muted-foreground);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+[data-slot='table-head']:first-child {
+  border-start-start-radius: var(--radius-md);
+  border-end-start-radius: var(--radius-md);
+}
+[data-slot='table-head']:last-child {
+  border-start-end-radius: var(--radius-md);
+  border-end-end-radius: var(--radius-md);
+}
+[data-slot='table-header'] [data-slot='table-row'] {
+  border-bottom: none;
+}
+[data-slot='table-cell'] {
+  padding: --spacing(3.5) --spacing(3);
+  /* Números que no bailan al cambiar de página. */
+  font-variant-numeric: tabular-nums;
+}
+[data-slot='table-body'] [data-slot='table-row'] {
+  border-bottom-color: color-mix(in oklch, var(--border) 75%, transparent);
+}
+[data-slot='table-body'] [data-slot='table-row']:hover {
+  background-color: color-mix(in oklch, var(--accent) 55%, transparent);
+}
+
+/*
+ * Campos: 32px de alto se sienten apretados en formularios que se completan a
+ * diario, y en un panel de escritorio hay lugar de sobra. Suben a 36, que es
+ * también la altura de los botones grandes con los que conviven.
+ */
+[data-slot='input'],
+[data-slot='input-group'],
+[data-slot='select-trigger'][data-size='default'] {
+  height: --spacing(9);
+}
+[data-slot='input'],
+[data-slot='textarea'],
+[data-slot='select-trigger'] {
+  box-shadow: var(--shadow-xs);
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+/* Capas flotantes: sombra propia en vez de la genérica del componente. */
+[data-slot='popover-content'],
+[data-slot='dropdown-menu-content'],
+[data-slot='select-content'] {
+  box-shadow: var(--shadow-popover);
+}
+[data-slot='dialog-content'] {
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-hero);
+}
+
+/* Los avisos flotantes comparten la elevación de las capas emergentes. */
+.cn-toast {
+  box-shadow: var(--shadow-popover);
+}
+
+/* Pestañas: la activa se levanta un poco del riel. */
+[data-slot='tabs-list'] {
+  border: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
+}
+[data-slot='tabs-trigger'][data-state='active'] {
+  box-shadow: var(--shadow-xs);
+}
+
+@layer components {
+  /*
+   * La elevación de las tarjetas sí queda en una capa: las pantallas de login
+   * y de cambio de contraseña piden `shadow-hero` desde el call site, y esa
+   * clase tiene que poder ganarle.
+   */
+  [data-slot='card'] {
+    box-shadow: var(--shadow-card);
   }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
+  [data-slot='card-title'] {
+    letter-spacing: -0.01em;
   }
 }
 
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
+/*
+ * Barra de desplazamiento fina y siempre a la vista.
+ *
+ * Reemplaza a `no-scrollbar` (la que trae shadcn en `CommandList`), que la
+ * escondía del todo: una lista recortada a `max-h-72` sin barra no avisa que
+ * abajo hay más. Con `scrollbar-width` en algo distinto de `auto`, Chrome y
+ * Firefox dibujan la barra clásica en lugar de la superpuesta de macOS, que
+ * solo aparece mientras se scrollea.
+ */
+@utility scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
 }
 
-body {
-  margin: 0;
+/* El degradado del anillo del logo, para los acentos de marca. */
+@utility brand-gradient {
+  background-image: linear-gradient(
+    120deg,
+    var(--brand-emerald) 0%,
+    var(--brand-teal) 45%,
+    var(--brand-blue) 100%
+  );
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
+/*
+ * Fondo de las pantallas sin shell (login, cambio de contraseña, errores).
+ *
+ * Dos manchas de color muy diluidas, una verde y una azul, en las mismas
+ * posiciones que ocupan en el anillo del logo. Alcanza para que la pantalla se
+ * sienta de la marca sin competir con la tarjeta que tiene el contenido.
+ */
+@utility brand-canvas {
+  background-color: var(--background);
+  background-image:
+    radial-gradient(
+      44rem 32rem at 10% -10%,
+      color-mix(in oklch, var(--brand-emerald) 30%, transparent) 0%,
+      transparent 62%
+    ),
+    radial-gradient(
+      48rem 34rem at 94% 110%,
+      color-mix(in oklch, var(--brand-blue) 30%, transparent) 0%,
+      transparent 60%
+    );
+  background-repeat: no-repeat;
 }
 
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
-  margin: 0;
+/* Cifras alineadas en columna: contadores, montos, paginación. */
+@utility tabular {
+  font-variant-numeric: tabular-nums;
 }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+/*
+ * Leaflet.
+ *
+ * El mapa venía con las esquinas cuadradas, los controles del gris de la
+ * librería y el popup con la tipografía del sistema: tres detalles que lo
+ * delataban como un widget pegado encima del panel en vez de parte de él.
+ */
+.leaflet-container {
+  border-radius: var(--radius-lg);
+  /* Sin esto, los mosaicos se dibujan por encima de las esquinas redondeadas. */
+  overflow: hidden;
+  font-family: var(--font-sans);
+  background-color: var(--muted);
+  /*
+   * El mapa se apila dentro de sí mismo.
+   *
+   * Leaflet reparte z-index hasta 1000 entre sus panes y sus controles, y los
+   * diálogos, los popovers y los menús de shadcn viven en 50. Como todos caían
+   * en el contexto de apilado de la raíz, 1000 le ganaba a 50 y el mapa se
+   * dibujaba **encima** del perfil del vecino, del selector de localidad y de
+   * cualquier capa flotante que lo cruzara.
+   *
+   * `isolation` encierra esos z-index acá adentro: el orden interno del mapa
+   * —mosaicos, marcadores, popups, controles— queda igual, pero hacia afuera el
+   * mapa es una capa más, en su lugar natural del flujo. Bajarle el z-index a
+   * los panes de Leaflet uno por uno rompería ese orden interno.
+   */
+  isolation: isolate;
 }
-
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+.leaflet-control-zoom {
+  border: none !important;
+  border-radius: var(--radius-md) !important;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.leaflet-control-zoom a {
+  background-color: var(--card) !important;
+  color: var(--foreground) !important;
+  border-color: var(--border) !important;
+}
+.leaflet-control-zoom a:hover {
+  background-color: var(--muted) !important;
+}
+.leaflet-control-attribution {
+  background-color: color-mix(in oklch, var(--card) 82%, transparent) !important;
+  color: var(--muted-foreground) !important;
+  font-size: 0.6875rem;
+  border-start-start-radius: var(--radius-sm);
+}
+.leaflet-control-attribution a {
+  color: var(--muted-foreground) !important;
+}
+.leaflet-popup-content-wrapper {
+  border-radius: var(--radius-lg) !important;
+  background-color: var(--popover) !important;
+  color: var(--popover-foreground) !important;
+  box-shadow: var(--shadow-popover) !important;
+}
+.leaflet-popup-content {
+  margin: --spacing(2.5) --spacing(3);
+  font-size: 0.8125rem;
+}
+.leaflet-popup-tip {
+  background-color: var(--popover) !important;
+}
+.leaflet-popup-close-button {
+  color: var(--muted-foreground) !important;
+}
+/*
+ * Los enlaces del popup, del color del panel y no del celeste de Leaflet.
+ *
+ * `.leaflet-container a` tiene dos clases de especificidad, así que le gana a
+ * cualquier utilidad de Tailwind puesta en el call site: `text-primary` en el
+ * enlace no alcanza. Es el mismo motivo por el que la atribución de abajo
+ * también se pisa acá.
+ */
+.leaflet-popup-content a {
+  color: var(--primary) !important;
 }

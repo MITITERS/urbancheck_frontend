@@ -1,0 +1,81 @@
+# `${API_UPSTREAM}` is substituted at container start by the nginx image's
+# envsubst entrypoint (see /etc/nginx/templates).
+
+# El esquema que vio el cliente (C-04). En producción el TLS termina en
+# Traefik y a este nginx le llega `http`: reenviar `$scheme` le haría creer a
+# Django que la conexión no es segura, y con SECURE_SSL_REDIRECT redirigiría
+# a https sin fin. Sin proxy adelante (o en local), vale el propio `$scheme`.
+map $http_x_forwarded_proto $forwarded_proto {
+    default $http_x_forwarded_proto;
+    ''      $scheme;
+}
+server {
+    # 8080 y no 80 (N-18): corre sin root, que no abre puertos bajos.
+    listen 8080;
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    include /etc/nginx/snippets/security-headers.conf;
+
+    gzip on;
+    gzip_types text/css application/javascript application/json image/svg+xml;
+    gzip_min_length 1024;
+
+    # Hashed assets can be cached forever; index.html never is.
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        include /etc/nginx/snippets/security-headers.conf;
+    }
+
+    location = /index.html {
+        add_header Cache-Control "no-store";
+        include /etc/nginx/snippets/security-headers.conf;
+    }
+
+    # Same-origin API: keeps CORS out of the picture.
+    location /api/ {
+        proxy_pass ${API_UPSTREAM};
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $forwarded_proto;
+    }
+
+    location /_allauth/ {
+        proxy_pass ${API_UPSTREAM};
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $forwarded_proto;
+    }
+
+    location /media/ {
+        proxy_pass ${API_UPSTREAM};
+        proxy_set_header Host $host;
+    }
+
+    # El enlace para compartir un reporte (US-030). Lo responde Django: las
+    # etiquetas de vista previa para WhatsApp y las redes —que no ejecutan
+    # JavaScript— y la redirección a la página del panel, `/reporte/<token>`.
+    # `X-Forwarded-Proto` es lo que hace que la URL de la foto salga en https.
+    location /r/ {
+        proxy_pass ${API_UPSTREAM};
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $forwarded_proto;
+    }
+
+    # Universal Links (iOS) y App Links (Android): con la app instalada, el
+    # sistema abre `/r/<token>` en ella. Los sirve Django en el mismo dominio.
+    location /.well-known/ {
+        proxy_pass ${API_UPSTREAM};
+        proxy_set_header Host $host;
+    }
+
+    # Client-side routing: every unknown path falls back to the SPA.
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
